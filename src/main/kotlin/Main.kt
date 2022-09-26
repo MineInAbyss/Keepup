@@ -5,9 +5,7 @@ import com.github.ajalt.clikt.parameters.types.path
 import com.jayway.jsonpath.JsonPath
 import eu.jrie.jetbrains.kotlinshell.shell.Shell
 import eu.jrie.jetbrains.kotlinshell.shell.shell
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -16,6 +14,7 @@ import kotlin.io.path.*
 class Keepup : CliktCommand() {
     // make path the first argument
     val input by argument(help = "Path to the file").inputStream()
+    val jsonPath by argument(help = "JsonPath to the root value to keep")
     val downloadPath by argument(help = "Path to download files to")
         .path(mustExist = true, canBeFile = false)
     val dest by argument()
@@ -32,22 +31,17 @@ class Keepup : CliktCommand() {
         clearSymlinks(dest)
         shell {
             strings.forEach { (key, value) ->
-
                 downloadPath / key
             }
         }
-        /*val keys = parsed.using(conf).read<List<Any?>>("\$..*")
-            .filterIsInstance<String>()*/
-        echo(strings)
     }
 
-    suspend fun Shell.download(path: String): Path {
+    suspend fun Shell.download(path: String): Path? {
         when {
-            // Starts with https
+            path == "." -> return null
             path.matches("^https?://.*".toRegex()) -> "wget $path -P $downloadPath"()
             else -> "rclone sync $path $downloadPath"()
         }
-        "wget $path"()
     }
 
     fun clearSymlinks(path: Path) {
