@@ -1,6 +1,5 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.options.check
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.inputStream
@@ -10,6 +9,7 @@ import commands.DownloadedItem
 import commands.Rclone
 import commands.Wget
 import java.nio.file.Path
+import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createSymbolicLinkPointingTo
 import kotlin.io.path.div
@@ -38,15 +38,14 @@ class Keepup : CliktCommand() {
 
         println("Clearing symlinks")
         clearSymlinks(dest)
-        val downloads = strings.flatMap { (key, source) ->
-            val isolatedPath = downloadPath / key
-            isolatedPath.createDirectories()
-            download(source, isolatedPath)
-        }
 
         println("Creating new symlinks")
-        downloads.forEach {
-            (dest / it.name).createSymbolicLinkPointingTo(downloadPath / it.relativePath)
+        strings.forEach { (key, source) ->
+            val isolatedPath = (downloadPath / key).absolute()
+            isolatedPath.createDirectories()
+            download(source, isolatedPath).forEach {
+                (dest / it.name).createSymbolicLinkPointingTo(isolatedPath / it.relativePath)
+            }
         }
     }
 }

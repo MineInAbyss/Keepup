@@ -1,4 +1,3 @@
-import commands.Wget
 import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.isDirectory
