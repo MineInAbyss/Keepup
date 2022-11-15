@@ -1,19 +1,9 @@
-import com.lordcodes.turtle.shellRun
+import commands.Wget
 import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isSymbolicLink
 import kotlin.io.path.listDirectoryEntries
-
-object Rclone {
-    fun sync(source: String, target: String): String =
-        shellRun("rsync", listOf("sync", source, target))
-}
-
-object Wget {
-    operator fun invoke(source: String, target: String) =
-        shellRun("wget", listOf(source, "-P", target))
-}
 
 fun clearSymlinks(path: Path) {
     // For each file in the directory
