@@ -2,23 +2,24 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
 import com.jayway.jsonpath.JsonPath
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import commands.DownloadedItem
 import commands.Rclone
 import commands.Wget
 import java.nio.file.Path
-import kotlin.io.path.absolute
-import kotlin.io.path.createDirectories
-import kotlin.io.path.createSymbolicLinkPointingTo
-import kotlin.io.path.div
+import kotlin.io.path.*
 
 class Keepup : CliktCommand() {
     // make path the first argument
     val input by argument(help = "Path to the file").inputStream()
     val jsonPath by option(help = "JsonPath to the root value to keep")
         .default("$")
+    val fileType by option().choice("json", "hocon").default("hocon")
     val downloadPath by argument(help = "Path to download files to")
         .path(mustExist = true, canBeFile = false)
     val dest by argument()
@@ -31,7 +32,15 @@ class Keepup : CliktCommand() {
     }
 
     override fun run() {
-        val parsed = JsonPath.parse(input)
+        val jsonInput = if(fileType == "hocon") {
+            println("Converting HOCON to JSON")
+            val config = ConfigFactory.parseReader(input.reader()).resolve()
+            // Convert config to json
+            config.root().render(ConfigRenderOptions.defaults().setComments(false).setOriginComments(false)).byteInputStream()
+        } else input
+
+        println("Parsing input")
+        val parsed = JsonPath.parse(jsonInput)
         val items = parsed.read<Map<String, Any?>>(jsonPath)
         // Fold leaf strings into a list
         val strings = getLeafStrings(items)
@@ -44,9 +53,10 @@ class Keepup : CliktCommand() {
             val isolatedPath = (downloadPath / key).absolute()
             isolatedPath.createDirectories()
             download(source, isolatedPath).forEach {
-                (dest / it.name).createSymbolicLinkPointingTo(isolatedPath / it.relativePath)
+                (dest / it.name).createSymbolicLinkPointingTo((isolatedPath / it.relativePath).relativeTo(dest.absolute()))
             }
         }
+        println("Keepup done!")
     }
 }
 
