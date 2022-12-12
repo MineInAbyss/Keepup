@@ -1,9 +1,22 @@
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
+import commands.DownloadedItem
+import commands.Rclone
+import commands.Wget
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.nio.file.Path
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.isDirectory
-import kotlin.io.path.isSymbolicLink
-import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.*
 
+/** Convers a HOCON [input] stream into JSON */
+fun renderHocon(input: InputStream): ByteArrayInputStream {
+    val config = ConfigFactory.parseReader(input.reader()).resolve()
+    // Convert config to json
+    return config.root().render(ConfigRenderOptions.defaults().setComments(false).setOriginComments(false))
+        .byteInputStream()
+}
+
+/** Removes any symlinks contained in [path] */
 fun clearSymlinks(path: Path) {
     // For each file in the directory
     path.listDirectoryEntries().forEach {
@@ -11,6 +24,19 @@ fun clearSymlinks(path: Path) {
     }
 }
 
+/**
+ * Downloads a file from a [source] definition into a [targetDir]
+ *
+ * @param source Takes form of an https url, rclone remote, or `.` to ignore
+ */
+fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
+    source == "." -> emptyList()
+    source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
+    else -> Rclone.sync(source, targetDir)
+}
+
+
+/** Fold leaf Strings of [map] into a list of Strings */
 fun getLeafStrings(map: Map<String, Any?>, acc: MutableMap<String, String> = mutableMapOf()): Map<String, String> {
     map.entries.forEach { (key, value) ->
         when (value) {
@@ -20,3 +46,16 @@ fun getLeafStrings(map: Map<String, Any?>, acc: MutableMap<String, String> = mut
     }
     return acc
 }
+
+/** Creates a symlink for a downloaded [item] to a [dest] folder */
+fun linkToDest(dest: Path, isolatedPath: Path, item: DownloadedItem) {
+    (dest / item.name).createSymbolicLinkPointingTo(
+        (isolatedPath / item.relativePath).relativeTo(dest.absolute())
+    )
+}
+
+/** Removes everything between the first digit and ext of the file */
+fun String.removeVersion() = "${takeWhile { !it.isDigit() }}.${takeLastWhile { it != '.' }}"
+
+/** Checks if two strings are similar with their versions removed */
+fun similar(a: String, b: String): Boolean = a.removeVersion() == b.removeVersion()
