@@ -40,4 +40,4 @@ jobs:
           prerelease: false
           automatic_release_tag: v${{ steps.extract_version.outputs.version }}
           files: |
-            ./build/distributions/hocon*.zip
+            ./build/distributions/keepup*.zip
