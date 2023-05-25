@@ -5,16 +5,16 @@ import com.lordcodes.turtle.shellRun
 import java.nio.file.Path
 
 object Wget {
-    operator fun invoke(url: String, target: Path): DownloadedItem? {
+    operator fun invoke(url: String, targetDir: Path): DownloadedItem? {
         val result = runCatching {
-            shellRun("wget", listOf("--no-clobber", url, "-P", target.toString()))
+            shellRun("wget", listOf("--no-clobber", url, "-P", targetDir.toString()))
         }
         return result.map {
             val name = url.substringAfterLast("/")
-            DownloadedItem("$target/$name", name)
+            DownloadedItem("$targetDir/$name", name)
         }
-            .onSuccess { println("Synced $url") }
-            .onFailure { if (it is ShellRunException) println("Error getting $url\n${it.message?.prependIndent("  ")}") }
+            .onSuccess { println("Downloaded $url") }
+            .onFailure { if (it is ShellRunException) println("Error downloading $url\n${it.message?.prependIndent("  ")}") }
             .getOrNull()
     }
 }

@@ -32,7 +32,7 @@ fun clearSymlinks(path: Path) {
 fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
     source == "." -> emptyList()
     source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
-    else -> Rclone.sync(source, targetDir)
+    else -> listOfNotNull(Rclone.sync(source, targetDir))
 }
 
 
