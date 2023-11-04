@@ -34,7 +34,8 @@ class DownloadsContext(
  *
  * @param source Takes form of an https url, rclone remote, or `.` to ignore
  */
-fun DownloadsContext.download(source: String): List<DownloadedItem> = when {
+context(Keepup)
+fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
     source == "." -> emptyList()
     source.startsWith("github:") -> GithubDownload.from(source).download(targetDir, forceLatest)
     source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))

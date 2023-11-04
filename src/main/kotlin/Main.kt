@@ -3,6 +3,7 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -11,6 +12,8 @@ import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
 import com.jayway.jsonpath.JsonPath
 import kotlin.io.path.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 class Keepup : CliktCommand() {
     init {
@@ -41,6 +44,12 @@ class Keepup : CliktCommand() {
     val forceLatest by option(help = "Force downloading the latest version of files from GitHub")
         .flag(default = false)
 
+    val cacheExpirationTime: Duration by option()
+        .convert { Duration.parse(it) }
+        .default(10.minutes)
+
+    val githubAuthToken: String? by option(help = "Used to access private repos or get a higher rate limit")
+
     override fun run() {
         if(forceLatest)
             echo("Forcing latest version on GitHub downloads")
@@ -63,14 +72,12 @@ class Keepup : CliktCommand() {
             val isolatedPath = (downloadPath / key).absolute()
             isolatedPath.createDirectories()
             val files = dest.listDirectoryEntries().filter { it.isRegularFile() }
-            with(DownloadsContext(isolatedPath, forceLatest)) {
-                download(source).forEach download@{ item ->
-                    if (ignoreSimilar && files.any { similar(item.name, it.name) }) {
-                        println("Skipping ${item.name} because it is similar to an existing file")
-                        return@download
-                    }
-                    linkToDest(dest, isolatedPath, item)
+            download(source, isolatedPath).forEach download@{ item ->
+                if (ignoreSimilar && files.any { similar(item.name, it.name) }) {
+                    println("Skipping ${item.name} because it is similar to an existing file")
+                    return@download
                 }
+                linkToDest(dest, isolatedPath, item)
             }
         }
         println("Keepup done!")
