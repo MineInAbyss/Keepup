@@ -24,15 +24,45 @@ fun clearSymlinks(path: Path) {
     }
 }
 
+class DownloadsContext(
+    val targetDir: Path,
+    val forceLatest: Boolean,
+)
+
 /**
  * Downloads a file from a [source] definition into a [targetDir]
  *
  * @param source Takes form of an https url, rclone remote, or `.` to ignore
  */
-fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
+fun DownloadsContext.download(source: String): List<DownloadedItem> = when {
     source == "." -> emptyList()
+    source.startsWith("github:") -> listOfNotNull(GithubDownload.from(source).download(targetDir, forceLatest))
     source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
     else -> listOfNotNull(Rclone.sync(source, targetDir))
+}
+
+/**
+ * Ex url "github:MineInAbyss/Idofront:v0.20.6:*.jar"
+ */
+class GithubDownload(val repo: String, val releaseVersion: String, val artifactRegex: String) {
+    companion object {
+        fun from(string: String): GithubDownload {
+            val (repo, release, grep) = string.removePrefix("github:").split(":")
+            return GithubDownload(repo, release, grep)
+        }
+
+    }
+
+    fun download(targetDir: Path, forceLatest: Boolean): DownloadedItem? {
+        val version = if (forceLatest) "latest" else releaseVersion
+        val releaseURL = if (version == "latest") "latest" else "tags/$releaseVersion"
+        val formatted =
+            "curl -s https://api.github.com/repos/$repo/releases/$releaseURL | grep 'browser_download_url$artifactRegex' | cut -d : -f 2,3 | tr -d \\\""
+        println("Formatted $formatted")
+        val url = formatted.evalBash(env = mapOf()).getOrThrow()
+        println("Got URL $url")
+        return Wget(url, targetDir)
+    }
 }
 
 

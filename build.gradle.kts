@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.8.21"
-    kotlin("plugin.serialization") version "1.8.21"
+    kotlin("jvm") version "1.9.20"
+    kotlin("plugin.serialization") version "1.9.20"
     application
 }
 
@@ -16,6 +16,7 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.lordcodes.turtle:turtle:0.8.0")
     implementation("com.jayway.jsonpath:json-path:2.7.0")
+    implementation("com.sealwu:kscript-tools:1.0.22")
     testImplementation(kotlin("test"))
 }
 

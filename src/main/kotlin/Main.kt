@@ -1,6 +1,7 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -12,14 +13,19 @@ import com.jayway.jsonpath.JsonPath
 import kotlin.io.path.*
 
 class Keepup : CliktCommand() {
+    init {
+        context {
+            autoEnvvarPrefix = "KEEPUP"
+        }
+    }
     // === Arguments ===
     val input by argument(help = "Path to the file").inputStream()
 
     val downloadPath by argument(help = "Path to download files to")
-        .path(mustExist = true, canBeFile = false)
+        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
 
     val dest by argument()
-        .path(mustExist = true, canBeFile = false)
+        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
 
     // === Options ===
     val jsonPath by option(help = "JsonPath to the root value to keep")
@@ -32,7 +38,13 @@ class Keepup : CliktCommand() {
     val ignoreSimilar by option(help = "Don't create symlinks for files with matching characters before the first number")
         .flag(default = true)
 
+    val forceLatest by option(help = "Force downloading the latest version of files from GitHub")
+        .flag(default = false)
+
     override fun run() {
+        if(forceLatest)
+            echo("Forcing latest version on GitHub downloads")
+
         val jsonInput = if (fileType == "hocon") {
             println("Converting HOCON to JSON")
             renderHocon(input)
@@ -51,12 +63,14 @@ class Keepup : CliktCommand() {
             val isolatedPath = (downloadPath / key).absolute()
             isolatedPath.createDirectories()
             val files = dest.listDirectoryEntries().filter { it.isRegularFile() }
-            download(source, isolatedPath).forEach download@{ item ->
-                if (ignoreSimilar && files.any { similar(item.name, it.name) }) {
-                    println("Skipping ${item.name} because it is similar to an existing file")
-                    return@download
+            with(DownloadsContext(isolatedPath, forceLatest)) {
+                download(source).forEach download@{ item ->
+                    if (ignoreSimilar && files.any { similar(item.name, it.name) }) {
+                        println("Skipping ${item.name} because it is similar to an existing file")
+                        return@download
+                    }
+                    linkToDest(dest, isolatedPath, item)
                 }
-                linkToDest(dest, isolatedPath, item)
             }
         }
         println("Keepup done!")
