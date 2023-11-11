@@ -16,17 +16,22 @@ Download latest release and unzip it, ensure Java is installed on your system.
 Usage: keepup [OPTIONS] INPUT DOWNLOADPATH DEST
 
 Options:
-  --json-path TEXT          JsonPath to the root value to keep
-  --file-type [json|hocon]  Type of file for the input stream
-  --ignore-similar          Don't create symlinks for files with matching
-                            characters before the first number
-  -h, --help                Show this message and exit
+  --json-path TEXT                 JsonPath to the root value to keep
+  --file-type [json|hocon]         Type of file for the input stream
+  --ignore-similar                 Don't create symlinks for files with
+                                   matching characters before the first number
+  --override-github-release [NONE|LATEST_RELEASE|LATEST]
+                                   Force downloading the latest version of
+                                   files from GitHub
+  --cache-expiration-time VALUE
+  --github-auth-token TEXT         Used to access private repos or get a
+                                   higher rate limit
+  -h, --help                       Show this message and exit
 
 Arguments:
   INPUT         Path to the file
   DOWNLOADPATH  Path to download files to
   DEST
-
 ```
 
 ### Config
