@@ -1,8 +1,8 @@
+package helpers
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import commands.DownloadedItem
-import commands.Rclone
-import commands.Wget
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
@@ -22,24 +22,6 @@ fun clearSymlinks(path: Path) {
     path.listDirectoryEntries().forEach {
         if (!it.isDirectory() && it.isSymbolicLink()) it.deleteIfExists()
     }
-}
-
-class DownloadsContext(
-    val targetDir: Path,
-    val forceLatest: Boolean,
-)
-
-/**
- * Downloads a file from a [source] definition into a [targetDir]
- *
- * @param source Takes form of an https url, rclone remote, or `.` to ignore
- */
-context(Keepup)
-fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
-    source == "." -> emptyList()
-    source.startsWith("github:") -> GithubDownload.from(source).download(targetDir, forceLatest)
-    source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
-    else -> listOfNotNull(Rclone.sync(source, targetDir))
 }
 
 /** Fold leaf Strings of [map] into a list of Strings */

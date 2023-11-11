@@ -8,9 +8,11 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
 import com.jayway.jsonpath.JsonPath
+import helpers.*
 import kotlin.io.path.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -41,8 +43,9 @@ class Keepup : CliktCommand() {
     val ignoreSimilar by option(help = "Don't create symlinks for files with matching characters before the first number")
         .flag(default = true)
 
-    val forceLatest by option(help = "Force downloading the latest version of files from GitHub")
-        .flag(default = false)
+    val overrideGithubRelease by option(help = "Force downloading the latest version of files from GitHub")
+        .enum<GithubReleaseOverride>()
+        .default(GithubReleaseOverride.NONE)
 
     val cacheExpirationTime: Duration by option()
         .convert { Duration.parse(it) }
@@ -51,8 +54,8 @@ class Keepup : CliktCommand() {
     val githubAuthToken: String? by option(help = "Used to access private repos or get a higher rate limit")
 
     override fun run() {
-        if(forceLatest)
-            echo("Forcing latest version on GitHub downloads")
+        if (overrideGithubRelease != GithubReleaseOverride.NONE)
+            echo("Overriding GitHub release versions to $overrideGithubRelease")
 
         val jsonInput = if (fileType == "hocon") {
             println("Converting HOCON to JSON")
