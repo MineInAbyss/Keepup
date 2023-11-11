@@ -1,6 +1,7 @@
 package commands
 
 import evalBash
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.time.LocalDateTime
 import kotlin.io.path.*
@@ -19,6 +20,7 @@ class CachedCommand(val command: String, val path: Path, val expiration: Duratio
         }
 
         val evaluated = command.evalBash(env = mapOf()).getOrThrow()
+        path.deleteIfExists()
         path.createParentDirectories().createFile().writeText(evaluated)
         // write expiration date
         if (expiration != null) {
