@@ -21,7 +21,11 @@ class GithubDownload(val repo: String, val releaseVersion: String, val artifactR
     }
 
     fun download(targetDir: Path, forceLatest: GithubReleaseOverride): List<DownloadedItem> {
-        val version = if (forceLatest == GithubReleaseOverride.LATEST_RELEASE) "latest" else releaseVersion
+        val version = when (forceLatest) {
+            GithubReleaseOverride.LATEST_RELEASE -> "latest-release"
+            GithubReleaseOverride.LATEST -> "latest"
+            else -> releaseVersion
+        }
         val releaseURL = if (version == "latest") "latest" else "tags/$releaseVersion"
         val downloadURLs = CachedCommand(
             buildString {
