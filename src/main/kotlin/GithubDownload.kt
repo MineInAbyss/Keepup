@@ -46,6 +46,7 @@ class GithubDownload(val repo: String, val releaseVersion: String, val artifactR
 
         println("Got URLs github:$repo:$version:$artifactRegexString $downloadURLs")
 
-        return downloadURLs.mapNotNull { Wget(it, targetDir) }
+        return downloadURLs
+            .mapNotNull { Wget(it, targetDir, updateIfChangedOnServer = forceLatest == GithubReleaseOverride.LATEST) }
     }
 }
