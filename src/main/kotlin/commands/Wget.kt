@@ -22,7 +22,15 @@ object Wget {
             DownloadedItem("$targetDir/$name", name)
         }
             .onSuccess { println("Downloaded $url") }
-            .onFailure { if (it is ShellRunException) println("Error downloading $url\n${it.message?.prependIndent("  ")}") }
+            .onFailure {
+                if (it is ShellRunException) System.err.println(
+                    "Error downloading $url\n${
+                        it.message?.prependIndent(
+                            "  "
+                        )
+                    }"
+                )
+            }
             .getOrNull()
     }
 }

@@ -18,7 +18,15 @@ object Rclone {
                 DownloadedItem("$targetDir/$name", name)
             }
             .onSuccess { println("Downloaded $source") }
-            .onFailure { if (it is ShellRunException) println("Error downloading $source\n${it.message?.prependIndent("  ")}") }
+            .onFailure {
+                if (it is ShellRunException) System.err.println(
+                    "Error downloading $source\n${
+                        it.message?.prependIndent(
+                            "  "
+                        )
+                    }"
+                )
+            }
             .getOrNull()
     }
 }

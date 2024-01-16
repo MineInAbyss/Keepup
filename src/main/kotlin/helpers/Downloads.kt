@@ -12,9 +12,15 @@ import java.nio.file.Path
  * @param source Takes form of an https url, rclone remote, or `.` to ignore
  */
 context(Keepup)
-fun download(source: String, targetDir: Path): List<DownloadedItem> = when {
-    source == "." -> emptyList()
-    source.startsWith("github:") -> GithubDownload.from(source).download(targetDir, overrideGithubRelease)
-    source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
-    else -> listOfNotNull(commands.Rclone.sync(source, targetDir))
+fun download(source: String, targetDir: Path): List<DownloadedItem> {
+    return runCatching {
+        return when {
+            source == "." -> emptyList()
+            source.startsWith("github:") -> GithubDownload.from(source).download(targetDir, overrideGithubRelease)
+            source.matches("^https?://.*".toRegex()) -> listOfNotNull(Wget(source, targetDir))
+            else -> listOfNotNull(commands.Rclone.sync(source, targetDir))
+        }
+    }
+        .onFailure { System.err.println("Error downloading $source\n${it.message?.prependIndent("  ")}") }
+        .getOrElse { emptyList() }
 }
