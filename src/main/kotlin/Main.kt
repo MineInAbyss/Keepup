@@ -67,6 +67,9 @@ class Keepup : CliktCommand() {
     val failAllDownloads by option(help = "Don't actually download anything, useful for testing")
         .flag(default = false)
 
+    val hideProgressBar by option(help = "Does not show progress bar if set to true")
+        .flag(default = false)
+
     val overrideGithubRelease by option(help = "Force downloading the latest version of files from GitHub")
         .enum<GithubReleaseOverride>()
         .default(GithubReleaseOverride.NONE)
@@ -85,13 +88,6 @@ class Keepup : CliktCommand() {
         )
     }
 
-    val progress = t.progressAnimation {
-        text("Keepup!")
-        percentage()
-        progressBar()
-        completed()
-        timeRemaining()
-    }
     override fun run() {
         if (overrideGithubRelease != GithubReleaseOverride.NONE)
             t.println("${yellow("[!]")} Overriding GitHub release versions to $overrideGithubRelease")
@@ -108,8 +104,15 @@ class Keepup : CliktCommand() {
 
         t.println("Clearing symlinks")
         clearSymlinks(dest)
-        progress.updateTotal(strings.size.toLong())
-        progress.start()
+        val progress = if (hideProgressBar) null else t.progressAnimation {
+            text("Keepup!")
+            percentage()
+            progressBar()
+            completed()
+            timeRemaining()
+        }
+        progress?.updateTotal(strings.size.toLong())
+        progress?.start()
 
         runBlocking(Dispatchers.IO) {
             val channel = Channel<DownloadResult>()
@@ -128,7 +131,7 @@ class Keepup : CliktCommand() {
                         launch {
                             downloader.download(Source(key, downloadQuery), downloadPathForKey)
                                 .forEach { channel.send(it) }
-                            progress.advance(1)
+                            progress?.advance(1)
                         }
                     }.joinAll()
                 }
@@ -141,8 +144,8 @@ class Keepup : CliktCommand() {
                 result.printToConsole()
             }
 
-            progress.clear()
-            progress.stop()
+            progress?.clear()
+            progress?.stop()
             t.println(brightGreen("Keepup done!"))
         }
     }

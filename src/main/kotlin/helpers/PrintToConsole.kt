@@ -15,7 +15,7 @@ fun DownloadResult.printToConsole() {
         }
 
         is DownloadResult.Downloaded -> {
-            t.println("${overrideInfoMsg ?: MSG.download} $formattedKey ${gray("as " + file.name)}")
+            t.println("${overrideInfoMsg ?: MSG.download} $formattedKey ${gray("(${file.name})")}")
         }
 
         is DownloadResult.SkippedBecauseCached -> {
@@ -23,7 +23,7 @@ fun DownloadResult.printToConsole() {
         }
 
         is DownloadResult.SkippedBecauseSimilar -> {
-            t.println("${MSG.skipped} $formattedKey ${gray("similar file found: $similarTo")}")
+            t.println("${MSG.skipped} $formattedKey ${gray("(similar to $similarTo)")}")
         }
     }
 }

@@ -10,6 +10,6 @@ class RcloneDownload(
 ) : Downloader {
     override suspend fun download(): List<DownloadResult> {
         val downloadPath = Rclone.sync(source.query, targetDir)
-        return listOf(DownloadResult.Downloaded(downloadPath, source.query, overrideInfoMsg = MSG.rclone))
+        return listOf(DownloadResult.Downloaded(downloadPath, source.keyInConfig, overrideInfoMsg = MSG.rclone))
     }
 }
