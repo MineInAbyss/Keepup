@@ -2,7 +2,7 @@ package helpers
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import commands.DownloadedItem
+import downloading.DownloadResult
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
@@ -36,14 +36,7 @@ fun getLeafStrings(map: Map<String, Any?>, acc: MutableMap<String, String> = mut
 }
 
 /** Creates a symlink for a downloaded [item] to a [dest] folder */
-fun linkToDest(dest: Path, isolatedPath: Path, item: DownloadedItem) {
-    (dest / item.name).createSymbolicLinkPointingTo(
-        (isolatedPath / item.relativePath).relativeTo(dest.absolute())
-    )
+fun linkToDest(dest: Path, source: DownloadResult.HasFiles) {
+    val file = source.file
+    (dest / file.name).createSymbolicLinkPointingTo((file).relativeTo(dest.absolute()))
 }
-
-/** Removes everything between the first digit and ext of the file */
-fun String.removeVersion() = "${takeWhile { !it.isDigit() }}.${takeLastWhile { it != '.' }}"
-
-/** Checks if two strings are similar with their versions removed */
-fun similar(a: String, b: String): Boolean = a.removeVersion() == b.removeVersion()

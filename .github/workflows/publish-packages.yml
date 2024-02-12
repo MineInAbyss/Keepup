@@ -23,7 +23,7 @@ jobs:
 
       - name: Run gradle build and publish
         run: >
-          gradle distZip
+          gradle shadowDistZip
           -PmineinabyssMavenUsername=${{ secrets.MAVEN_PUBLISH_USERNAME }} -PmineinabyssMavenPassword=${{ secrets.MAVEN_PUBLISH_PASSWORD }}
 
       - name: Get version from gradle
@@ -40,4 +40,4 @@ jobs:
           prerelease: false
           automatic_release_tag: v${{ steps.extract_version.outputs.version }}
           files: |
-            ./build/distributions/keepup*.zip
+            ./build/distributions/keepup-shadow*.zip

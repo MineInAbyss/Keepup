@@ -11,11 +11,31 @@ import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
+import com.github.ajalt.mordant.animation.progressAnimation
+import com.github.ajalt.mordant.rendering.TextColors.brightGreen
+import com.github.ajalt.mordant.rendering.TextColors.yellow
+import com.github.ajalt.mordant.terminal.Terminal
 import com.jayway.jsonpath.JsonPath
+import config.GithubConfig
+import downloading.DownloadParser
+import downloading.DownloadResult
+import downloading.Source
 import helpers.*
-import kotlin.io.path.*
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlin.io.path.absolute
+import kotlin.io.path.createDirectories
+import kotlin.io.path.div
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+
+val keepup by lazy { Keepup() }
+val t by lazy { Terminal() }
 
 class Keepup : CliktCommand() {
     init {
@@ -23,6 +43,7 @@ class Keepup : CliktCommand() {
             autoEnvvarPrefix = "KEEPUP"
         }
     }
+
     // === Arguments ===
     val input by argument(help = "Path to the file").inputStream()
 
@@ -43,6 +64,9 @@ class Keepup : CliktCommand() {
     val ignoreSimilar by option(help = "Don't create symlinks for files with matching characters before the first number")
         .flag(default = true)
 
+    val failAllDownloads by option(help = "Don't actually download anything, useful for testing")
+        .flag(default = false)
+
     val overrideGithubRelease by option(help = "Force downloading the latest version of files from GitHub")
         .enum<GithubReleaseOverride>()
         .default(GithubReleaseOverride.NONE)
@@ -53,38 +77,75 @@ class Keepup : CliktCommand() {
 
     val githubAuthToken: String? by option(help = "Used to access private repos or get a higher rate limit")
 
+    val githubConfig by lazy {
+        GithubConfig(
+            githubAuthToken = githubAuthToken,
+            overrideGithubRelease = overrideGithubRelease,
+            cacheExpirationTime = cacheExpirationTime,
+        )
+    }
+
+    val progress = t.progressAnimation {
+        text("Keepup!")
+        percentage()
+        progressBar()
+        completed()
+        timeRemaining()
+    }
     override fun run() {
         if (overrideGithubRelease != GithubReleaseOverride.NONE)
-            echo("Overriding GitHub release versions to $overrideGithubRelease")
+            t.println("${yellow("[!]")} Overriding GitHub release versions to $overrideGithubRelease")
 
         val jsonInput = if (fileType == "hocon") {
-            println("Converting HOCON to JSON")
+            t.println("Converting HOCON to JSON")
             renderHocon(input)
         } else input
 
-        println("Parsing input")
+        t.println("Parsing input")
         val parsed = JsonPath.parse(jsonInput)
         val items = parsed.read<Map<String, Any?>>(jsonPath)
         val strings = getLeafStrings(items)
 
-        println("Clearing symlinks")
+        t.println("Clearing symlinks")
         clearSymlinks(dest)
+        progress.updateTotal(strings.size.toLong())
+        progress.start()
 
-        println("Creating new symlinks")
-        strings.forEach { (key, source) ->
-            val isolatedPath = (downloadPath / key).absolute()
-            isolatedPath.createDirectories()
-            val files = dest.listDirectoryEntries().filter { it.isRegularFile() }
-            download(source, isolatedPath).forEach download@{ item ->
-                if (ignoreSimilar && files.any { similar(item.name, it.name) }) {
-                    println("Skipping ${item.name} because it is similar to an existing file")
-                    return@download
+        runBlocking(Dispatchers.IO) {
+            val channel = Channel<DownloadResult>()
+            launch {
+                HttpClient(CIO).use { client ->
+                    val similarFileChecker = if (ignoreSimilar) SimilarFileChecker(dest) else null
+                    val downloader = DownloadParser(
+                        client,
+                        githubConfig,
+                        similarFileChecker
+                    )
+
+                    strings.map { (key, downloadQuery) ->
+                        val downloadPathForKey = (downloadPath / key).absolute()
+                        downloadPathForKey.createDirectories()
+                        launch {
+                            downloader.download(Source(key, downloadQuery), downloadPathForKey)
+                                .forEach { channel.send(it) }
+                            progress.advance(1)
+                        }
+                    }.joinAll()
                 }
-                linkToDest(dest, isolatedPath, item)
+                channel.close()
             }
+            for (result in channel) {
+                if (result is DownloadResult.HasFiles) {
+                    linkToDest(dest, result)
+                }
+                result.printToConsole()
+            }
+
+            progress.clear()
+            progress.stop()
+            t.println(brightGreen("Keepup done!"))
         }
-        println("Keepup done!")
     }
 }
 
-fun main(args: Array<String>) = Keepup().main(args)
+fun main(args: Array<String>) = keepup.main(args)
