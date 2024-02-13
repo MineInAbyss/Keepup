@@ -24,13 +24,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.lordcodes.turtle:turtle:0.8.0")
-    implementation("com.jayway.jsonpath:json-path:2.7.0")
     implementation("io.ktor:ktor-client-core:2.3.8")
     implementation("io.ktor:ktor-client-cio:2.3.8")
+    implementation("io.ktor:ktor-client-cio-jvm:2.3.8")
     implementation("com.github.ajalt.mordant:mordant:2.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")
-    implementation("com.sealwu:kscript-tools:1.0.22")
-    implementation("io.ktor:ktor-client-cio-jvm:2.3.8")
+    implementation("org.slf4j:slf4j-nop:2.0.12")
     testImplementation(kotlin("test"))
 }
 
@@ -48,6 +47,8 @@ kotlin {
 
 tasks {
     shadowJar {
-        minimize()
+        minimize {
+            exclude { it.moduleGroup == "org.slf4j" }
+        }
     }
 }

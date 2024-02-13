@@ -1,19 +1,24 @@
 package downloading.github
 
 import com.github.ajalt.mordant.rendering.TextColors
-import com.github.ajalt.mordant.rendering.TextColors.gray
-import commands.CachedCommand
 import config.GithubConfig
 import downloading.DownloadResult
 import downloading.Downloader
 import downloading.HttpDownload
 import downloading.Source
+import helpers.CachedRequest
 import helpers.GithubReleaseOverride
 import helpers.MSG
 import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import t
 import java.nio.file.Path
 import kotlin.io.path.div
@@ -27,40 +32,78 @@ class GithubDownload(
     val artifact: GithubArtifact,
     val targetDir: Path,
 ) : Downloader {
+    val json = Json { ignoreUnknownKeys = true }
+
+    @Serializable
+    data class GithubRelease(
+        val published_at: String,
+        val assets: List<Asset>
+    )
+
+    @Serializable
+    data class Asset(
+        val browser_download_url: String
+    )
+
+    @Serializable
+    data class GithubErrorMessage(
+        val message: String
+    )
 
     override suspend fun download(): List<DownloadResult> {
         val version = when (config.overrideGithubRelease) {
-            GithubReleaseOverride.LATEST_RELEASE -> "latest-release"
             GithubReleaseOverride.LATEST -> "latest"
             else -> artifact.releaseVersion
         }
-        val releaseURL = if (version == "latest") "latest" else "tags/${artifact.releaseVersion}"
 
-        //TODO convert to ktor
-        val commandResult = CachedCommand(
-            buildString {
-                append("curl -s ")
-                if (config.githubAuthToken != null)
-                    append("-H \"Authorization: token ${config.githubAuthToken}\" ")
-                if (config.overrideGithubRelease == GithubReleaseOverride.LATEST)
-                    append("https://api.github.com/repos/${artifact.repo}/releases | jq 'map(select(.draft == false)) | sort_by(.published_at) | last'")
-                else
-                    append("https://api.github.com/repos/${artifact.repo}/releases/$releaseURL")
-                append(" | grep 'browser_download_url'")
-            },
+        val response = CachedRequest(
             targetDir / "response-${artifact.repo.replace("/", "-")}-$version",
             expiration = config.cacheExpirationTime.takeIf { version == "latest" }
-        ).getFromCacheOrEval()
+        ) {
+            val response = client.get {
+                if (config.overrideGithubRelease == GithubReleaseOverride.LATEST)
+                    url("https://api.github.com/repos/${artifact.repo}/releases")
+                else {
+                    val releaseURL = if (version == "latest") "latest" else "tags/${artifact.releaseVersion}"
+                    url("https://api.github.com/repos/${artifact.repo}/releases/$releaseURL")
+                }
+                headers {
+                    if (config.githubAuthToken != null)
+                        append(HttpHeaders.Authorization, "token ${config.githubAuthToken}")
+                }
+            }
+            if (response.status != HttpStatusCode.OK) {
+                return@CachedRequest Result.failure(RuntimeException("GET responded with error: ${response.status}, ${response.bodyAsText()}"))
+            }
 
-        val downloadURLs = commandResult
-            .result
-            .split("\n")
-            .map { it.trim().removePrefix("\"browser_download_url\": \"").trim('"') }
+            Result.success(response.bodyAsText())
+        }.getFromCacheOrEval().getOrElse {
+            return listOf(DownloadResult.Failure(it.message ?: "", artifact.source.keyInConfig))
+        }
+
+        val body = response.result
+
+        val release: GithubRelease = runCatching {
+            if (config.overrideGithubRelease == GithubReleaseOverride.LATEST) {
+                json.decodeFromString(ListSerializer(GithubRelease.serializer()), body)
+                    .maxBy { it.published_at }
+            } else json.decodeFromString(GithubRelease.serializer(), body)
+        }.getOrElse {
+            return listOf(
+                DownloadResult.Failure(
+                    "Failed to parse GitHub response:\n${it.message}",
+                    artifact.source.keyInConfig
+                )
+            )
+        }
+        val downloadURLs = release.assets
+            .map { it.browser_download_url }
             .filter { it.contains(artifact.calculatedRegex) }
 
-        val fullName = TextColors.yellow("github:${artifact.repo}:$version:${artifact.regex}")
-        if (!commandResult.wasCached) {
-            t.println(gray("${MSG.github} Got artifact URLs for $fullName"))
+        val fullName = TextColors.yellow(artifact.source.keyInConfig)
+
+        if (!response.wasCached) {
+            t.println(TextColors.gray("${MSG.github} $fullName GET artifact URLs"))
         }
 
         return coroutineScope {

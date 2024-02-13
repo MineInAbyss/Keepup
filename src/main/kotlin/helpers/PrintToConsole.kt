@@ -11,7 +11,7 @@ fun DownloadResult.printToConsole() {
 
     when (this) {
         is DownloadResult.Failure -> {
-            t.println(brightRed("${MSG.failure} for $formattedKey: $message"), stderr = true)
+            t.println(brightRed("${MSG.failure} $formattedKey: $message"), stderr = true)
         }
 
         is DownloadResult.Downloaded -> {

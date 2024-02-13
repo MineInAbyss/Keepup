@@ -15,7 +15,6 @@ import com.github.ajalt.mordant.animation.progressAnimation
 import com.github.ajalt.mordant.rendering.TextColors.brightGreen
 import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
-import com.jayway.jsonpath.JsonPath
 import config.GithubConfig
 import downloading.DownloadParser
 import downloading.DownloadResult
@@ -28,11 +27,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.DurationUnit
+import kotlin.time.TimeSource
 
 val keepup by lazy { Keepup() }
 val t by lazy { Terminal() }
@@ -54,7 +57,7 @@ class Keepup : CliktCommand() {
         .path(mustExist = true, canBeFile = false, mustBeWritable = true)
 
     // === Options ===
-    val jsonPath by option(help = "JsonPath to the root value to keep")
+    val jsonPath by option(help = "Path to the root object to download from, uses keys separated by .")
         .default("$")
 
     val fileType by option(help = "Type of file for the input stream")
@@ -92,18 +95,30 @@ class Keepup : CliktCommand() {
         if (overrideGithubRelease != GithubReleaseOverride.NONE)
             t.println("${yellow("[!]")} Overriding GitHub release versions to $overrideGithubRelease")
 
+        val startTime = TimeSource.Monotonic.markNow()
+
         val jsonInput = if (fileType == "hocon") {
-            t.println("Converting HOCON to JSON")
+            t.println("${MSG.info} Converting HOCON to JSON")
             renderHocon(input)
         } else input
 
-        t.println("Parsing input")
-        val parsed = JsonPath.parse(jsonInput)
-        val items = parsed.read<Map<String, Any?>>(jsonPath)
+        t.println("${MSG.info} Parsing input")
+        val parsed = Json.parseToJsonElement(jsonInput.reader().use { it.readText() })
+        val items = jsonPath.removePrefix("$").split(".").fold(parsed.jsonObject) { acc, key ->
+            if (key == "") return@fold acc
+            acc.getValue(key).jsonObject
+        }
         val strings = getLeafStrings(items)
 
-        t.println("Clearing symlinks")
+        t.println("${MSG.info} Clearing symlinks")
         clearSymlinks(dest)
+
+        t.println(
+            "${MSG.info} Running Keepup on ${yellow(strings.size.toString())} items" + if (jsonPath != "$") " from path ${
+                yellow(jsonPath)
+            }" else ""
+        )
+
         val progress = if (hideProgressBar) null else t.progressAnimation {
             text("Keepup!")
             percentage()
@@ -146,7 +161,8 @@ class Keepup : CliktCommand() {
 
             progress?.clear()
             progress?.stop()
-            t.println(brightGreen("Keepup done!"))
+            val elapsed = startTime.elapsedNow().toString(unit = DurationUnit.SECONDS, decimals = 2)
+            t.println("${MSG.info} ${brightGreen("done in $elapsed!")}")
         }
     }
 }

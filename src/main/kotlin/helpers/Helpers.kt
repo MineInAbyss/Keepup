@@ -3,6 +3,8 @@ package helpers
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import downloading.DownloadResult
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
@@ -25,11 +27,12 @@ fun clearSymlinks(path: Path) {
 }
 
 /** Fold leaf Strings of [map] into a list of Strings */
-fun getLeafStrings(map: Map<String, Any?>, acc: MutableMap<String, String> = mutableMapOf()): Map<String, String> {
+fun getLeafStrings(map: JsonObject, acc: MutableMap<String, String> = mutableMapOf()): Map<String, String> {
     map.entries.forEach { (key, value) ->
         when (value) {
-            is String -> acc[key] = value
-            is Map<*, *> -> getLeafStrings(value as Map<String, Any?>, acc)
+            is JsonPrimitive -> acc[key] = value.content
+            is JsonObject -> getLeafStrings(value, acc)
+            else -> return acc
         }
     }
     return acc

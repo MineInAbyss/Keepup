@@ -1,7 +1,6 @@
 package downloading
 
 import SimilarFileChecker
-import com.lordcodes.turtle.ShellRunException
 import config.GithubConfig
 import downloading.github.GithubArtifact
 import downloading.github.GithubDownload
@@ -46,11 +45,11 @@ class DownloadParser(
         val results = runCatching {
             downloader.download()
         }.getOrElse { error ->
-            val message = (error.message).takeIf { error is ShellRunException } ?: error.stackTraceToString()
+            val message = error.stackTraceToString()
 
             listOf(
                 DownloadResult.Failure(
-                    message = "Program errored,\n${message.prependIndent("\t")}",
+                    message = "Program errored,\n$message",
                     keyInConfig = source.keyInConfig,
                 )
             )
