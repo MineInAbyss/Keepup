@@ -10,6 +10,7 @@ import helpers.CachedRequest
 import helpers.GithubReleaseOverride
 import helpers.MSG
 import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -61,6 +62,9 @@ class GithubDownload(
             expiration = config.cacheExpirationTime.takeIf { version == "latest" }
         ) {
             val response = client.get {
+                timeout {
+                    requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+                }
                 if (config.overrideGithubRelease == GithubReleaseOverride.LATEST)
                     url("https://api.github.com/repos/${artifact.repo}/releases")
                 else {

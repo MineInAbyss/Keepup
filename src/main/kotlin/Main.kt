@@ -22,6 +22,7 @@ import downloading.Source
 import helpers.*
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.joinAll
@@ -132,7 +133,9 @@ class Keepup : CliktCommand() {
         runBlocking(Dispatchers.IO) {
             val channel = Channel<DownloadResult>()
             launch {
-                HttpClient(CIO).use { client ->
+                HttpClient(CIO) {
+                    install(HttpTimeout)
+                }.use { client ->
                     val similarFileChecker = if (ignoreSimilar) SimilarFileChecker(dest) else null
                     val downloader = DownloadParser(
                         client,
