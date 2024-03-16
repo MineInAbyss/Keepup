@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -26,18 +28,8 @@ jobs:
           gradle shadowDistZip
           -PmineinabyssMavenUsername=${{ secrets.MAVEN_PUBLISH_USERNAME }} -PmineinabyssMavenPassword=${{ secrets.MAVEN_PUBLISH_PASSWORD }}
 
-      - name: Get version from gradle
-        shell: bash
-        id: extract_version
-        run: |
-          version=`gradle properties --console=plain -q | grep "^version:" | awk '{printf $2}'`
-          echo "::set-output name=version::$version"
-
-      - name: Create GitHub Release
-        uses: marvinpinto/action-automatic-releases@latest
+      - uses: MineInAbyss/publish-action@develop
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          automatic_release_tag: v${{ steps.extract_version.outputs.version }}
-          files: |
-            ./build/distributions/keepup-shadow*.zip
+          run-gradle-build: false
+          release-files: |
+            build/distributions/keepup-shadow*.zip
