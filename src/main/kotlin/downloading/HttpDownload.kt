@@ -1,6 +1,7 @@
 package downloading
 
 import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -25,12 +26,18 @@ class HttpDownload(
         val cache = "Last-Modified: $lastModified, Content-Length: $length"
         if (targetFile.exists() && cacheFile.exists() && cacheFile.readText() == cache)
             return listOf(DownloadResult.SkippedBecauseCached(targetFile, source.keyInConfig))
-        cacheFile.deleteIfExists()
-        cacheFile.createFile().writeText(cache)
 
-        client.get(source.query)
+        client.get(source.query) {
+            timeout {
+                requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+            }
+        }
             .bodyAsChannel()
             .copyAndClose(targetFile.toFile().writeChannel())
+
+        // Only mark as cached after download is complete
+        cacheFile.deleteIfExists()
+        cacheFile.createFile().writeText(cache)
 
         return listOf(DownloadResult.Downloaded(targetFile, source.keyInConfig))
     }
