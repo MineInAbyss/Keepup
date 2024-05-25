@@ -1,0 +1,25 @@
+[versions]
+clikt = "4.4.0"
+hocon = "1.4.3"
+kotlin = "2.0.0"
+kotlinx-coroutines = "1.8.1"
+kotlinx-serialization = "1.6.3"
+ktor = "2.3.11"
+mordant = "2.6.0"
+slf4j = "2.0.13"
+turtle = "0.10.0"
+
+[libraries]
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+hocon = { module = "com.typesafe:config", version.ref = "hocon" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
+slf4j = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+turtle = { module = "com.lordcodes.turtle:turtle", version.ref = "turtle" }
+
+[plugins]
+kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
