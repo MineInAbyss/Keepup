@@ -1,8 +1,11 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.decodeFromStream
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -15,6 +18,8 @@ import com.github.ajalt.mordant.animation.progressAnimation
 import com.github.ajalt.mordant.rendering.TextColors.brightGreen
 import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
+import com.mineinabyss.keepup.config.ConfigTreeBuilder
+import com.mineinabyss.keepup.config.KeepupConfigsInventory
 import config.GithubConfig
 import downloading.DownloadParser
 import downloading.DownloadResult
@@ -33,6 +38,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
+import kotlin.io.path.inputStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
@@ -91,6 +97,14 @@ class Keepup : CliktCommand() {
             cacheExpirationTime = cacheExpirationTime,
         )
     }
+
+    val enableConfigs: Boolean by option(help = "Enable config synchronization features").flag(default = true)
+    val configsTarget: String? by option(help = "Target server name for configs feature, used to figure out which configs to copy, etc...")
+    val configsInventory by option(help = "Inventory file defining config options").path()
+    val configsDestRoot by argument()
+        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
+        .optional()
+
 
     override fun run() {
         if (overrideGithubRelease != GithubReleaseOverride.NONE)
@@ -161,9 +175,29 @@ class Keepup : CliktCommand() {
                 }
                 result.printToConsole()
             }
-
             progress?.clear()
             progress?.stop()
+
+            if (enableConfigs) {
+                val target = configsTarget
+                val invPath = configsInventory
+                val destRoot = configsDestRoot
+                if (target == null || invPath == null || destRoot == null) {
+                    t.println("${MSG.error} Configs feature requires target and inventory to be set")
+                } else {
+                    t.println("${MSG.info} Configs feature enabled!")
+                    val inventory = Yaml.default.decodeFromStream<KeepupConfigsInventory>(invPath.inputStream())
+                    val paths = (inventory.targets[configsTarget] ?: emptyList())
+                        .map { invPath / it / "sync" }
+                    val tree = ConfigTreeBuilder()
+                    val trackedFiles = tree.destFilesForRoots(paths)
+                    t.println("${MSG.info} Deleting untracked files in destination: ${inventory.deleteUntracked}")
+                    inventory.deleteUntracked.forEach { deletePath ->
+                        tree.deleteUntrackedFor(destRoot, destRoot / deletePath, trackedFiles)
+                    }
+                }
+            }
+
             val elapsed = startTime.elapsedNow().toString(unit = DurationUnit.SECONDS, decimals = 2)
             t.println("${MSG.info} ${brightGreen("done in $elapsed!")}")
         }

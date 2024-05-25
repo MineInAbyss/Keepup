@@ -24,12 +24,13 @@ kotlin {
 dependencies {
     implementation(libs.hocon)
     implementation(libs.kotlinx.serialization)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kaml)
     implementation(libs.clikt)
     implementation(libs.turtle)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.mordant)
-    implementation(libs.kotlinx.coroutines)
     implementation(libs.slf4j)
     testImplementation(kotlin("test"))
 }
