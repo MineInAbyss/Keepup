@@ -7,6 +7,7 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.mordant.rendering.TextColors.brightGreen
 import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.mineinabyss.keepup.config.ConfigDefinition
 import com.mineinabyss.keepup.config.ConfigTreeBuilder
 import com.mineinabyss.keepup.config.Inventory
 import helpers.MSG
@@ -28,16 +29,21 @@ class ConfigCommand : CliktCommand(name = "config") {
         .path(mustExist = true, canBeFile = false, mustBeWritable = true)
 
     override fun run() {
-        t.println("${MSG.info} Running config sync")
+        t.println("${MSG.info} Running config sync for $targetName...")
         val inventory = Yaml.default.decodeFromStream<Inventory>(inventoryPath.inputStream())
-        val paths = (inventory.targets[targetName] ?: emptyList())
-            .map { inventoryPath.parent / it / "sync" }
+        val config = (inventory.configs[targetName] ?: run {
+            t.println("${MSG.error} Config not found: $targetName")
+            return
+        })
+        val included = inventory.getOrCreateConfigs(config.include)
+        val reduced = ConfigDefinition.reduce(included + config)
+
+        val paths = reduced.copyPaths.map { inventoryPath.parent / it }
+
         val tree = ConfigTreeBuilder()
         val destToSource = tree.destFilesForRoots(paths)
         val trackedFiles = destToSource.keys.map { it.pathString }.toSet()
-        t.println("Tracked files were $trackedFiles")
-
-        t.println("${MSG.info} Synchronizing files...")
+        t.println("${MSG.info} Synchronizing ${trackedFiles.size} files...")
 
         val startTime = TimeSource.Monotonic.markNow()
         val results = runBlocking(Dispatchers.IO) {
@@ -70,9 +76,9 @@ class ConfigCommand : CliktCommand(name = "config") {
         val copyCount = results.fold(0L) { acc, syncResult -> acc + syncResult.copyCount }
 
         var deleteCount = 0
-        if (inventory.files.isNotEmpty()) {
-            t.println("${MSG.info} Deleting untracked files in destination: ${inventory.files.keys}")
-            inventory.files
+        if (reduced.files.isNotEmpty()) {
+            t.println("${MSG.info} Deleting untracked files in destination: ${reduced.files.keys}")
+            reduced.files
                 .filterValues { it.deleteUntracked }
                 .forEach { (path, config) ->
                     val deletePath = destRoot / path
