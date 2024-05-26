@@ -1,8 +1,8 @@
 package helpers
 
 import com.github.ajalt.mordant.rendering.TextColors.*
+import com.mineinabyss.keepup.commands.t
 import downloading.DownloadResult
-import t
 import kotlin.io.path.name
 
 

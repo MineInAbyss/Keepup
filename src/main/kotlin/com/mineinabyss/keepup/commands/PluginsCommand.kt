@@ -1,11 +1,9 @@
-@file:Suppress("MemberVisibilityCanBePrivate")
+package com.mineinabyss.keepup.commands
 
-import com.charleskorn.kaml.Yaml
-import com.charleskorn.kaml.decodeFromStream
+import SimilarFileChecker
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -15,11 +13,9 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.mordant.animation.progressAnimation
-import com.github.ajalt.mordant.rendering.TextColors.brightGreen
-import com.github.ajalt.mordant.rendering.TextColors.yellow
-import com.github.ajalt.mordant.terminal.Terminal
-import com.mineinabyss.keepup.config.ConfigTreeBuilder
-import com.mineinabyss.keepup.config.KeepupConfigsInventory
+import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.widgets.progress.progressBar
+import com.github.ajalt.mordant.widgets.progress.progressBarLayout
 import config.GithubConfig
 import downloading.DownloadParser
 import downloading.DownloadResult
@@ -38,16 +34,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
-import kotlin.io.path.inputStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
-val keepup by lazy { Keepup() }
-val t by lazy { Terminal() }
-
-class Keepup : CliktCommand() {
+class PluginsCommand : CliktCommand(name = "plugins") {
     init {
         context {
             autoEnvvarPrefix = "KEEPUP"
@@ -98,17 +90,9 @@ class Keepup : CliktCommand() {
         )
     }
 
-    val enableConfigs: Boolean by option(help = "Enable config synchronization features").flag(default = true)
-    val configsTarget: String? by option(help = "Target server name for configs feature, used to figure out which configs to copy, etc...")
-    val configsInventory by option(help = "Inventory file defining config options").path()
-    val configsDestRoot by argument()
-        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
-        .optional()
-
-
     override fun run() {
         if (overrideGithubRelease != GithubReleaseOverride.NONE)
-            t.println("${yellow("[!]")} Overriding GitHub release versions to $overrideGithubRelease")
+            t.println("${TextColors.yellow("[!]")} Overriding GitHub release versions to $overrideGithubRelease")
 
         val startTime = TimeSource.Monotonic.markNow()
 
@@ -129,11 +113,14 @@ class Keepup : CliktCommand() {
         clearSymlinks(dest)
 
         t.println(
-            "${MSG.info} Running Keepup on ${yellow(strings.size.toString())} items" + if (jsonPath != "$") " from path ${
-                yellow(jsonPath)
+            "${MSG.info} Running Keepup on ${TextColors.yellow(strings.size.toString())} items" + if (jsonPath != "$") " from path ${
+                TextColors.yellow(jsonPath)
             }" else ""
         )
 
+        progressBarLayout {
+            progressBar()
+        }
         val progress = if (hideProgressBar) null else t.progressAnimation {
             text("Keepup!")
             percentage()
@@ -178,30 +165,8 @@ class Keepup : CliktCommand() {
             progress?.clear()
             progress?.stop()
 
-            if (enableConfigs) {
-                val target = configsTarget
-                val invPath = configsInventory
-                val destRoot = configsDestRoot
-                if (target == null || invPath == null || destRoot == null) {
-                    t.println("${MSG.error} Configs feature requires target and inventory to be set")
-                } else {
-                    t.println("${MSG.info} Configs feature enabled!")
-                    val inventory = Yaml.default.decodeFromStream<KeepupConfigsInventory>(invPath.inputStream())
-                    val paths = (inventory.targets[configsTarget] ?: emptyList())
-                        .map { invPath / it / "sync" }
-                    val tree = ConfigTreeBuilder()
-                    val trackedFiles = tree.destFilesForRoots(paths)
-                    t.println("${MSG.info} Deleting untracked files in destination: ${inventory.deleteUntracked}")
-                    inventory.deleteUntracked.forEach { deletePath ->
-                        tree.deleteUntrackedFor(destRoot, destRoot / deletePath, trackedFiles)
-                    }
-                }
-            }
-
             val elapsed = startTime.elapsedNow().toString(unit = DurationUnit.SECONDS, decimals = 2)
-            t.println("${MSG.info} ${brightGreen("done in $elapsed!")}")
+            t.println("${MSG.info} ${TextColors.brightGreen("done in $elapsed!")}")
         }
     }
 }
-
-fun main(args: Array<String>) = keepup.main(args)

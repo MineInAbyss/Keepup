@@ -40,7 +40,7 @@ tasks.test {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("com.mineinabyss.keepup.commands.MainKt")
 }
 
 tasks {

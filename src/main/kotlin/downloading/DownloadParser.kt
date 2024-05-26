@@ -1,11 +1,11 @@
 package downloading
 
 import SimilarFileChecker
+import com.mineinabyss.keepup.commands.plugins
 import config.GithubConfig
 import downloading.github.GithubArtifact
 import downloading.github.GithubDownload
 import io.ktor.client.*
-import keepup
 import kotlinx.coroutines.delay
 import java.nio.file.Path
 import kotlin.random.Random
@@ -24,7 +24,7 @@ class DownloadParser(
      * @param source Takes form of an https url, rclone remote, or `.` to ignore
      */
     suspend fun download(source: Source, targetDir: Path): List<DownloadResult> {
-        if (keepup.failAllDownloads) {
+        if (plugins.failAllDownloads) {
             delay(Random.nextLong(500, 2000).milliseconds)
             return listOf(DownloadResult.Failure("Testing flag enabled", source.keyInConfig))
         }

@@ -1,6 +1,7 @@
 package downloading.github
 
 import com.github.ajalt.mordant.rendering.TextColors
+import com.mineinabyss.keepup.commands.t
 import config.GithubConfig
 import downloading.DownloadResult
 import downloading.Downloader
@@ -20,7 +21,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import t
 import java.nio.file.Path
 import kotlin.io.path.div
 

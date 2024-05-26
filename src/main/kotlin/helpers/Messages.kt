@@ -14,10 +14,13 @@ object MSG {
         append(brightWhite("]"))
     }
     val download = brightBlue("[Downloaded]")
-    val error = brightRed("[Error]     ")
     val failure = brightRed("[Failure]   ")
     val cached = brightGreen("[Use Cached]")
     val github = gray("[Github]    ")
     val rclone = brightBlue("[Rclone]    ")
     val skipped = brightYellow("[Ignoring]  ")
+
+    val error = red("[Error]")
+    val delete = red("[Delete]")
+    val copy = brightBlue("[Copy]")
 }
