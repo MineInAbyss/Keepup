@@ -20,6 +20,7 @@ object MSG {
     val rclone = brightBlue("[Rclone]    ")
     val skipped = brightYellow("[Ignoring]  ")
 
+    val warn = yellow("[Warn]")
     val error = red("[Error]")
     val delete = red("[Delete]")
     val copy = brightBlue("[Copy]")

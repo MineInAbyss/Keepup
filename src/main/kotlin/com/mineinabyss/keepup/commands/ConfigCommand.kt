@@ -4,7 +4,9 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.decodeFromStream
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.optional
+import com.github.ajalt.clikt.parameters.options.defaultLazy
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.mordant.rendering.TextColors.brightGreen
 import com.github.ajalt.mordant.rendering.TextColors.gray
@@ -25,30 +27,48 @@ import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
 class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config files to appropriate destinations") {
-    val targetName by argument(help = "Target server name for configs feature, used to figure out which configs to copy, etc...")
+    val include by argument(
+        "include",
+        help = "The config defined in inventory to sync"
+    )
 
-    val inventoryPath by argument(help = "Inventory file defining config options")
+    val inventoryFile by option(
+        "-i", "--inventory",
+        help = "Inventory file defining config options"
+    )
         .path(mustExist = true, canBeDir = false, mustBeReadable = true)
+        .required()
 
-    val destRoot by argument()
+    val sourceRoot by option(
+        "-s",
+        "--source",
+        help = "Directory containing source configs to sync, defaults to directory of inventory"
+    )
         .path(mustExist = true, canBeFile = false, mustBeWritable = true)
+        .defaultLazy { inventoryFile.parent }
 
-    val templateCacheDir by argument(help = "Directory to cache template results, if unspecified will not templates .peb files")
+    val destRoot by option("-d", "--dest", help = "Directory to sync configs to")
+        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
+        .required()
+
+    val templateCacheDir by option(
+        "-t", "--template-cache",
+        help = "Directory to cache template results, if unspecified will not templates .peb files"
+    )
         .path(mustExist = false, canBeFile = false, mustBeWritable = true)
-        .optional()
 
     @OptIn(ExperimentalStdlibApi::class)
     override fun run() {
-        t.println("${MSG.info} Running config sync for $targetName...")
-        val inventory = Yaml.default.decodeFromStream<Inventory>(inventoryPath.inputStream())
-        val config = (inventory.configs[targetName] ?: run {
-            t.println("${MSG.error} Config not found: $targetName")
+        t.println("${MSG.info} Running config sync for $include...")
+        val inventory = Yaml.default.decodeFromStream<Inventory>(inventoryFile.inputStream())
+        val config = (inventory.configs[include] ?: run {
+            t.println("${MSG.error} Config not found: $include")
             return
         })
         val included = inventory.getOrCreateConfigs(config.include)
         val reduced = ConfigDefinition.reduce(included + config)
 
-        val paths = reduced.copyPaths.map { inventoryPath.parent / it }
+        val paths = reduced.copyPaths.map { sourceRoot / it }
 
         val tree = ConfigTreeBuilder()
         val destToSource = tree.destFilesForRoots(paths)
