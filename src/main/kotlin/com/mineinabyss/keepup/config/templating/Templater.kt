@@ -6,9 +6,11 @@ import java.io.StringWriter
 class Templater {
     val pebble = PebbleEngine.Builder().build()
 
-    fun template(input: String, variables: Map<String, Any?>): String {
+    fun template(input: String, variables: Map<String, Any?>): Result<String> {
         val writer = StringWriter()
-        pebble.getLiteralTemplate(input).evaluate(writer, variables)
-        return writer.toString()
+        return runCatching {
+            pebble.getLiteralTemplate(input).evaluate(writer, variables)
+            writer.toString()
+        }
     }
 }

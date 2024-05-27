@@ -23,4 +23,5 @@ object MSG {
     val error = red("[Error]")
     val delete = red("[Delete]")
     val copy = brightBlue("[Copy]")
+    val template = brightBlue("[Template]")
 }

@@ -65,6 +65,7 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
                     var skipCount = 0L
                     var copyCount = 0L
                     var templateCreatedCount = 0L
+                    var failed = 0L
                     entries.forEach { (dest, source) ->
                         val sourceModified = source.getLastModifiedTime()
                         val isTemplate = templateCacheDir != null && source.name.endsWith(".peb")
@@ -84,12 +85,18 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
                                 val output = templater.template(
                                     source.inputStream().bufferedReader().readText(),
                                     reduced.variables
-                                )
+                                ).getOrElse {
+                                    t.println("${MSG.error} Failed to template $source")
+                                    t.println("${it.message ?: it::class.simpleName}")
+                                    failed++
+                                    return@forEach
+                                }
                                 destAbsolute.createParentDirectories()
                                 cacheFile.createParentDirectories()
                                 cacheFile.writeText(output)
                                 cacheFile.setLastModifiedTime(sourceModified)
                                 templateCreatedCount++
+                                t.println("${MSG.template} $source")
                             }
                             cacheFile
                         } else source
@@ -103,13 +110,14 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
                         sourceForSkipComparison.copyTo(destAbsolute.createParentDirectories(), overwrite = true)
                         destAbsolute.setLastModifiedTime(sourceModified)
                     }
-                    SyncResult(skipCount, copyCount, templateCreatedCount)
+                    SyncResult(skipCount, copyCount, templateCreatedCount, failed)
                 }
             }.awaitAll()
         }
         val skipCount = results.fold(0L) { acc, syncResult -> acc + syncResult.skipped }
         val copyCount = results.fold(0L) { acc, syncResult -> acc + syncResult.copyCount }
         val templateCount = results.fold(0L) { acc, syncResult -> acc + syncResult.templateCount }
+        val failedCount = results.fold(0L) { acc, syncResult -> acc + syncResult.failed }
 
         var deleteCount = 0
         if (reduced.files.isNotEmpty()) {
@@ -132,6 +140,7 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
         val elapsed = startTime.elapsedNow().toString(unit = DurationUnit.SECONDS, decimals = 2)
         t.println("${MSG.info} ${brightGreen("Done synchronizing configs in $elapsed")}")
         t.println("${MSG.info} ${brightGreen("Skipped $skipCount, Copied $copyCount, Deleted $deleteCount, Generated templates $templateCount")}")
+        if (failedCount > 0) t.println("${MSG.error} $failedCount files failed to copy")
     }
 
     companion object {
@@ -144,6 +153,7 @@ class SyncResult(
     val skipped: Long,
     val copyCount: Long,
     val templateCount: Long,
+    val failed: Long,
 )
 
 
