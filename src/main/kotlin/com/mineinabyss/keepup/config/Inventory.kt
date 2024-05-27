@@ -14,7 +14,7 @@ class Inventory(
         val global = configs["global"]
         return listOfNotNull(global) + names.map {
             configs[it] ?: ConfigDefinition(
-                copyPaths = listOf("$it/sync"),
+                copyPaths = listOf(it),
             )
         }
     }
