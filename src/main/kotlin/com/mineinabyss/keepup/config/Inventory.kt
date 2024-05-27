@@ -1,6 +1,7 @@
 package com.mineinabyss.keepup.config
 
 import com.mineinabyss.keepup.helpers.InnerSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -37,7 +38,8 @@ data class ConfigDefinition(
     val copyPaths: List<String> = emptyList(),
     val files: Map<String, FileConfig> = mapOf(),
     val include: List<String> = listOf(),
-    val variables: Map<String, String> = mapOf()
+    @Serializable(with = VariablesSerializer::class)
+    val variables: Map<String, @Contextual Any?> = mapOf(),
 ) {
     companion object {
         fun reduce(configs: List<ConfigDefinition>) =

@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.mordant)
     implementation(libs.slf4j)
     testImplementation(kotlin("test"))
+    implementation("io.pebbletemplates:pebble:3.2.2")
+
 }
 
 tasks.test {

@@ -39,7 +39,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
-class PluginsCommand : CliktCommand(name = "plugins") {
+class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from a hocon/json config") {
     init {
         context {
             autoEnvvarPrefix = "KEEPUP"
