@@ -47,8 +47,40 @@ data class ConfigDefinition(
                 acc.copy(
                     copyPaths = acc.copyPaths + config.copyPaths,
                     files = acc.files + config.files,
-                    variables = acc.variables + config.variables
+                    variables = mergeVariables(acc.variables, config.variables)
                 )
             }
+
+        fun mergeVariables(
+            acc: Map<*, *>,
+            vars: Map<*, *>
+        ): Map<String, Any?> {
+            val merge = acc.toMutableMap()
+            vars.forEach { (key, value) ->
+                val existing = acc[key]
+                merge[key] = when {
+                    value is Map<*, *> && existing is Map<*, *> -> {
+                        mergeVariables(existing, value)
+                    }
+
+                    value is List<*> && existing is List<*> -> {
+                        (existing + value).distinct()
+                    }
+
+                    else -> value
+                }
+            }
+            return merge as Map<String, Any?>
+        }
     }
+}
+
+
+fun main() {
+    println(
+        ConfigDefinition.mergeVariables(
+            mapOf("env" to mapOf("a" to 1)),
+            mapOf("env" to mapOf("b" to 2))
+        )
+    )
 }

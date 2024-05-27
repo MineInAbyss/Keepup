@@ -18,7 +18,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
+import java.security.MessageDigest
 import kotlin.io.path.*
+import kotlin.text.Charsets.UTF_8
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
@@ -72,9 +74,9 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
                             else destRoot / dest
 
                         val sourceForSkipComparison = if (isTemplate) {
-                            val cacheFile = templateCacheDir!! / (dest.parent ?: Path(".")) / "${
-                                source.fileSize().toHexString()
-                            }-${dest.name}"
+                            val cacheFile = templateCacheDir!! /
+                                    (dest.parent ?: Path(".")) /
+                                    "${hashString(reduced.variables.toString() + "len: ${source.fileSize()}").toHexString()}-${dest.name}"
 
                             // Create template cache if necessary
                             // cacheFile name encodes file size so another check isn't necessary
@@ -149,3 +151,7 @@ fun shouldSkipCopy(path: Path, other: Path) =
     other.exists() &&
             path.getLastModifiedTime() == other.getLastModifiedTime() &&
             path.fileSize() == other.fileSize()
+
+val MD5 = MessageDigest.getInstance("MD5")
+fun hashString(str: String): ByteArray =
+    MD5.digest(str.toByteArray(UTF_8))
