@@ -55,7 +55,7 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
         "-t", "--template-cache",
         help = "Directory to cache template results, if unspecified will not templates .peb files"
     )
-        .path(mustExist = false, canBeFile = false, mustBeWritable = true)
+        .path(mustExist = false, canBeFile = false)
 
     @OptIn(ExperimentalStdlibApi::class)
     override fun run() {
@@ -75,7 +75,7 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
         val destToSource = tree.destFilesForRoots(paths)
         val trackedFiles = destToSource.keys.map { it.pathString }.toSet()
         t.println("${MSG.info} Synchronizing ${trackedFiles.size} files...")
-
+        templateCacheDir?.createParentDirectories()
         val startTime = TimeSource.Monotonic.markNow()
         val templater = Templater()
         val results = runBlocking(Dispatchers.IO) {
