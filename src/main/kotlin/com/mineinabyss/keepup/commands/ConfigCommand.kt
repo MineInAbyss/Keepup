@@ -65,9 +65,10 @@ class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config f
             t.println("${MSG.error} Config not found: $include")
             return
         })
-        val included = inventory.getOrCreateConfigs(config.include)
-        val reduced = ConfigDefinition.reduce(included + config)
+        val included = inventory.getOrCreateConfigs(include)
+        val reduced = ConfigDefinition.reduce(included)
 
+        t.println("${MSG.info} Included paths: ${reduced.copyPaths}")
         val paths = reduced.copyPaths.map { sourceRoot / it }
 
         val tree = ConfigTreeBuilder()

@@ -10,13 +10,21 @@ import kotlinx.serialization.builtins.serializer
 class Inventory(
     val configs: Map<String, ConfigDefinition>,
 ) {
-    fun getOrCreateConfigs(names: Iterable<String>): List<ConfigDefinition> {
+    fun getOrCreateConfigs(name: String): List<ConfigDefinition> {
         val global = configs["global"]
-        return listOfNotNull(global) + names.map {
-            configs[it] ?: ConfigDefinition(
-                copyPaths = listOf(it),
-            )
+        val includes = getDeepIncludes(names = listOf(name)).distinct().reversed()
+        return listOfNotNull(global) + includes.map {
+            configs[it] ?: ConfigDefinition(copyPaths = listOf(it))
         }
+    }
+
+    tailrec fun getDeepIncludes(acc: MutableList<String> = mutableListOf(), names: List<String>): List<String> {
+        if (names.isEmpty()) return acc
+        val namesSet = names.toSet()
+        val nonCyclicNames = names - acc.filter { it in namesSet }.toSet()
+        acc.addAll(nonCyclicNames)
+        val newNames = nonCyclicNames.flatMap { configs[it]?.include?.reversed() ?: emptyList() }
+        return getDeepIncludes(acc, newNames)
     }
 
     object Serializer : InnerSerializer<Map<String, ConfigDefinition>, Inventory>(
