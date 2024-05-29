@@ -8,7 +8,8 @@ import downloading.Downloader
 import downloading.HttpDownload
 import downloading.Source
 import helpers.CachedRequest
-import helpers.GithubReleaseOverride
+import helpers.GithubReleaseOverride.LATEST
+import helpers.GithubReleaseOverride.LATEST_RELEASE
 import helpers.MSG
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -53,7 +54,7 @@ class GithubDownload(
 
     override suspend fun download(): List<DownloadResult> {
         val version = when (config.overrideGithubRelease) {
-            GithubReleaseOverride.LATEST -> "latest"
+            LATEST, LATEST_RELEASE -> "latest"
             else -> artifact.releaseVersion
         }
 
@@ -65,7 +66,7 @@ class GithubDownload(
                 timeout {
                     requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
                 }
-                if (config.overrideGithubRelease == GithubReleaseOverride.LATEST)
+                if (config.overrideGithubRelease == LATEST)
                     url("https://api.github.com/repos/${artifact.repo}/releases")
                 else {
                     val releaseURL = if (version == "latest") "latest" else "tags/${artifact.releaseVersion}"
@@ -88,7 +89,7 @@ class GithubDownload(
         val body = response.result
 
         val release: GithubRelease = runCatching {
-            if (config.overrideGithubRelease == GithubReleaseOverride.LATEST) {
+            if (config.overrideGithubRelease == LATEST) {
                 json.decodeFromString(ListSerializer(GithubRelease.serializer()), body)
                     .maxBy { it.published_at }
             } else json.decodeFromString(GithubRelease.serializer(), body)
