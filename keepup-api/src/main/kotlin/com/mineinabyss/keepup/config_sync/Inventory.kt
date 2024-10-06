@@ -1,10 +1,13 @@
 package com.mineinabyss.keepup.config_sync
 
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.decodeFromStream
 import com.mineinabyss.keepup.helpers.InnerSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
+import java.io.InputStream
 
 @Serializable(with = Inventory.Serializer::class)
 class Inventory(
@@ -33,6 +36,10 @@ class Inventory(
         { Inventory(it) },
         { it.configs }
     )
+
+    companion object {
+        fun from(inputStream: InputStream) = Yaml.default.decodeFromStream<Inventory>(inputStream)
+    }
 }
 
 @Serializable

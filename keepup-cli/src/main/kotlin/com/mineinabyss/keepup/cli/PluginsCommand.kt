@@ -83,7 +83,6 @@ class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from
 
     override fun run() {
         val keepup = Keepup()
-
         val downloader = keepup.downloader(
             config = KeepupDownloaderConfig(
                 downloadCache = downloadPath,
@@ -91,8 +90,7 @@ class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from
                 failAllDownloads = failAllDownloads,
             ),
             githubConfig = githubConfig,
-
-            )
+        )
         val parser = keepup.catalogParser()
 
         val sources = parser.parse(
