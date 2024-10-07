@@ -69,7 +69,7 @@ class DownloadParser(
                 val expectedFileType = source.expectedType
                 if (it !is DownloadResult.HasFiles || expectedFileType == null) return@map it
                 val type = FileTypeChecker.getType(it.file)
-                if (type == expectedFileType) it
+                if (type == null || type == expectedFileType) it
                 else DownloadResult.Failure(
                     "Downloaded file type didn't match expected, got $type, expected $expectedFileType",
                     it.keyInConfig

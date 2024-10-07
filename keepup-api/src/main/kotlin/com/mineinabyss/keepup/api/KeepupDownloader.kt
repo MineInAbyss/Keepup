@@ -5,6 +5,7 @@ import com.mineinabyss.keepup.downloads.github.GithubConfig
 import com.mineinabyss.keepup.downloads.parsing.DownloadParser
 import com.mineinabyss.keepup.downloads.parsing.DownloadSource
 import com.mineinabyss.keepup.similarfiles.SimilarFileChecker
+import com.mineinabyss.keepup.type_checker.FileTypeChecker.SYSTEM_SUPPORTS_FILE
 import io.ktor.client.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class KeepupDownloader(
         dest: Path,
         scope: CoroutineScope,
     ): ReceiveChannel<DownloadResult> = scope.produce(Dispatchers.IO) {
+        SYSTEM_SUPPORTS_FILE // check if system supports file command
         val similarFileChecker = if (config.ignoreSimilar) SimilarFileChecker(dest) else null
         val downloader = DownloadParser(
             failAllDownloads = config.failAllDownloads,
