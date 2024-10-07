@@ -32,4 +32,4 @@ jobs:
         with:
           run-gradle-build: false
           release-files: |
-            keepup/cli/build/distributions/keepup-shadow*.zip
+            keepup-cli/build/distributions/keepup-shadow*.zip
