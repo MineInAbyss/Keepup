@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinx.serialization)
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     application
 }
 
@@ -22,5 +23,20 @@ dependencies {
 }
 
 application {
+    applicationName = "keepup"
     mainClass.set("com.mineinabyss.keepup.cli.MainKt")
+}
+
+distributions {
+    this.shadow {
+        distributionBaseName = "keepup"
+    }
+}
+
+tasks {
+    shadowJar {
+        minimize {
+            exclude { it.moduleGroup == "org.slf4j" }
+        }
+    }
 }

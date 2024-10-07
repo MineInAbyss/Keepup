@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import java.io.InputStream
 
-enum class CatalogType {
+enum class VersionCatalogType {
     JSON,
     HOCON,
 }
@@ -28,24 +28,22 @@ data class JsonPath(val path: String) {
 
 data class KeepupVersionCatalog(
     val inputStream: InputStream,
-    val type: CatalogType,
+    val type: VersionCatalogType,
     val include: JsonPath,
 )
 
-class KeepupVersionsCatalogParser(
-//    val githubConfig: GithubConfig = GithubConfig(),
-) {
+class KeepupVersionsCatalogParser {
     fun parse(
         catalog: KeepupVersionCatalog,
     ): List<DownloadSource> {
 
         val jsonInputStream = when (catalog.type) {
-            CatalogType.HOCON -> {
+            VersionCatalogType.HOCON -> {
                 t.println("${MSG.info} Converting HOCON to JSON")
                 renderHocon(catalog.inputStream)
             }
 
-            CatalogType.JSON -> catalog.inputStream
+            VersionCatalogType.JSON -> catalog.inputStream
         }
 
         t.println("${MSG.info} Parsing input")

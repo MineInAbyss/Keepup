@@ -38,17 +38,17 @@ class GithubDownload(
     @Serializable
     data class GithubRelease(
         val published_at: String,
-        val assets: List<Asset>
+        val assets: List<Asset>,
     )
 
     @Serializable
     data class Asset(
-        val browser_download_url: String
+        val browser_download_url: String,
     )
 
     @Serializable
     data class GithubErrorMessage(
-        val message: String
+        val message: String,
     )
 
     override suspend fun download(): List<DownloadResult> {
@@ -107,7 +107,7 @@ class GithubDownload(
         val fullName = TextColors.yellow(artifact.source.keyInConfig)
 
         if (!response.wasCached) {
-            t.println(TextColors.gray("${MSG.github} $fullName GET artifact URLs"))
+            t.println("${MSG.github} $fullName ${TextColors.gray("GET artifact URLs")}")
         }
 
         return coroutineScope {

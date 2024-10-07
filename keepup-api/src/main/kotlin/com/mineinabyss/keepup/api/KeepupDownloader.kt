@@ -8,9 +8,10 @@ import com.mineinabyss.keepup.similarfiles.SimilarFileChecker
 import io.ktor.client.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
@@ -24,16 +25,16 @@ class KeepupDownloader(
     suspend fun download(
         vararg sources: DownloadSource,
         dest: Path,
-    ): Channel<DownloadResult> = withContext(Dispatchers.IO) {
-        val channel = Channel<DownloadResult>()
-        launch {
+    ): Channel<DownloadResult> = coroutineScope {
+        val channel = Channel<DownloadResult>(UNLIMITED)
+        launch(Dispatchers.IO) {
             http.use { client ->
                 val similarFileChecker = if (config.ignoreSimilar) SimilarFileChecker(dest) else null
                 val downloader = DownloadParser(
-                    config.failAllDownloads,
-                    client,
-                    githubConfig,
-                    similarFileChecker
+                    failAllDownloads = config.failAllDownloads,
+                    client = client,
+                    githubConfig = githubConfig,
+                    similarFileChecker = similarFileChecker,
                 )
 
                 sources.map { source ->
@@ -42,11 +43,11 @@ class KeepupDownloader(
                     launch {
                         downloader
                             .download(source, downloadPathForKey)
-                            .forEach { channel.send(it) }
+                            .forEach { channel.trySend(it) }
                     }
                 }.joinAll()
+                channel.close()
             }
-            channel.close()
         }
         channel
     }

@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
-//    id("com.github.johnrengelman.shadow") version "8.1.1"
 //    id("com.github.ben-manes.versions") version "0.41.0"
 //    id("nl.littlerobots.version-catalog-update") version "0.8.4"
 }

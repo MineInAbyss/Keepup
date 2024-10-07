@@ -8,6 +8,7 @@ import com.mineinabyss.keepup.downloads.github.GithubDownload
 import com.mineinabyss.keepup.downloads.http.HttpDownloader
 import com.mineinabyss.keepup.downloads.rclone.RcloneDownloader
 import com.mineinabyss.keepup.similarfiles.SimilarFileChecker
+import com.mineinabyss.keepup.type_checker.FileTypeChecker
 import io.ktor.client.*
 import kotlinx.coroutines.delay
 import java.nio.file.Path
@@ -27,7 +28,10 @@ class DownloadParser(
      *
      * @param source Takes form of an https url, rclone remote, or `.` to ignore
      */
-    suspend fun download(source: DownloadSource, targetDir: Path): List<DownloadResult> {
+    suspend fun download(
+        source: DownloadSource,
+        targetDir: Path,
+    ): List<DownloadResult> {
         if (failAllDownloads) {
             delay(Random.nextLong(500, 2000).milliseconds)
             return listOf(DownloadResult.Failure("Testing flag enabled", source.keyInConfig))
@@ -59,6 +63,18 @@ class DownloadParser(
             )
         }
 
-        return similarFileChecker?.filterSimilarFiles(results) ?: results
+        return similarFileChecker?.filterSimilarFiles(results)
+            // Check if the downloaded file matches the expected file type
+            ?.map {
+                val expectedFileType = source.expectedType
+                if (it !is DownloadResult.HasFiles || expectedFileType == null) return@map it
+                val type = FileTypeChecker.getType(it.file)
+                if (type == expectedFileType) it
+                else DownloadResult.Failure(
+                    "Downloaded file type didn't match expected, got $type, expected $expectedFileType",
+                    it.keyInConfig
+                )
+            }
+            ?: results
     }
 }

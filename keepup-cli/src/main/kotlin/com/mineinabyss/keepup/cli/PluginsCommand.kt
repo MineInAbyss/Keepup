@@ -51,8 +51,8 @@ class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from
         .default("$")
 
     val fileType by option(help = "Type of file for the input stream")
-        .enum<CatalogType>()
-        .default(CatalogType.HOCON)
+        .enum<VersionCatalogType>()
+        .default(VersionCatalogType.HOCON)
 
     val ignoreSimilar by option(help = "Don't create symlinks for files with matching characters before the first number")
         .flag(default = true)
