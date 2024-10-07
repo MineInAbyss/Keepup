@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinx.serialization)
+    alias(idofrontLibs.plugins.mia.publication)
 }
 
 dependencies {
@@ -12,8 +13,10 @@ dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.mordant)
-//    implementation(libs.clikt)
-//    implementation(libs.slf4j)
     implementation("io.pebbletemplates:pebble:3.2.2")
+}
 
+java {
+    withSourcesJar()
+    withJavadocJar()
 }
