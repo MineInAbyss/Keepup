@@ -1,6 +1,7 @@
 package com.mineinabyss.keepup.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.option
@@ -12,7 +13,9 @@ import com.mineinabyss.keepup.helpers.MSG
 import com.mineinabyss.keepup.t
 import kotlin.io.path.inputStream
 
-class ConfigCommand : CliktCommand(name = "config", help = "Syncs local config files to appropriate destinations") {
+class ConfigCommand : CliktCommand(name = "config") {
+    override fun help(context: Context) = "Syncs local config files to appropriate destinations"
+
     val include by argument(
         "include",
         help = "The config defined in inventory to sync"

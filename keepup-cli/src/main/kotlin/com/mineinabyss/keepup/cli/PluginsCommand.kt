@@ -1,6 +1,7 @@
 package com.mineinabyss.keepup.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.convert
@@ -10,10 +11,11 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.inputStream
 import com.github.ajalt.clikt.parameters.types.path
-import com.github.ajalt.mordant.animation.progressAnimation
+import com.github.ajalt.mordant.animation.progress.advance
+import com.github.ajalt.mordant.animation.progress.animateOnThread
+import com.github.ajalt.mordant.animation.progress.execute
 import com.github.ajalt.mordant.rendering.TextColors
-import com.github.ajalt.mordant.widgets.progress.progressBar
-import com.github.ajalt.mordant.widgets.progress.progressBarLayout
+import com.github.ajalt.mordant.widgets.progress.*
 import com.mineinabyss.keepup.api.*
 import com.mineinabyss.keepup.downloads.DownloadResult
 import com.mineinabyss.keepup.downloads.github.GithubConfig
@@ -23,14 +25,15 @@ import com.mineinabyss.keepup.helpers.clearSymlinks
 import com.mineinabyss.keepup.helpers.linkToDest
 import com.mineinabyss.keepup.helpers.printToConsole
 import com.mineinabyss.keepup.t
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
-class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from a hocon/json config") {
+class PluginsCommand : CliktCommand(name = "plugins") {
+    override fun help(context: Context): String = "Syncs plugins from a hocon/json config"
+
     init {
         context {
             autoEnvvarPrefix = "KEEPUP"
@@ -113,24 +116,23 @@ class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from
         progressBarLayout {
             progressBar()
         }
-        val progress = if (hideProgressBar) null else t.progressAnimation {
+        val progress = if (hideProgressBar) null else progressBarLayout {
             text("Keepup!")
             percentage()
             progressBar()
             completed()
             timeRemaining()
-        }
-        progress?.updateTotal(sources.size.toLong())
-        progress?.start()
+        }.animateOnThread(t)
+        progress?.update { total = (sources.size.toLong()) }
+        progress?.execute()
 
         if (githubConfig.overrideGithubRelease != GithubReleaseOverride.NONE)
             t.println("${TextColors.yellow("[!]")} Overriding GitHub release versions to ${githubConfig.overrideGithubRelease}")
 
         val startTime = TimeSource.Monotonic.markNow()
 
-        runBlocking(Dispatchers.IO) {
-            val downloadResults = downloader.download(sources = sources.toTypedArray(), dest = dest)
-
+        runBlocking {
+            val downloadResults = downloader.download(sources = sources.toTypedArray(), dest = dest, this)
             for (result in downloadResults) {
                 if (result is DownloadResult.HasFiles) {
                     linkToDest(dest, result)
@@ -139,6 +141,7 @@ class PluginsCommand : CliktCommand(name = "plugins", help = "Syncs plugins from
                 progress?.advance(1)
                 result.printToConsole()
             }
+
             progress?.clear()
             progress?.stop()
 

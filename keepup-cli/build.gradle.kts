@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinx.serialization)
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    alias(libs.plugins.shadow)
     application
 }
 
@@ -36,7 +36,7 @@ distributions {
 tasks {
     shadowJar {
         minimize {
-            exclude { it.moduleGroup == "org.slf4j" }
+            exclude { it.moduleGroup == "org.slf4j" || it.moduleGroup == "com.github.ajalt.mordant" }
         }
     }
 }
