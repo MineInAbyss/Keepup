@@ -33,7 +33,7 @@ class ConfigCommand : CliktCommand(name = "config") {
         "--source",
         help = "Directory containing source configs to sync, defaults to directory of inventory"
     )
-        .path(mustExist = true, canBeFile = false, mustBeWritable = true)
+        .path(mustExist = true, canBeFile = false, mustBeReadable = true)
         .defaultLazy { inventoryFile.parent }
 
     val destRoot by option("-d", "--dest", help = "Directory to sync configs to")
