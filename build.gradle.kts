@@ -34,6 +34,10 @@ allprojects {
     apply(plugin = "kotlin")
 
     kotlin {
-        jvmToolchain(23)
+        jvmToolchain(23) // want this for graalvm 23 despite kotlin not supporting yet
+    }
+    java {
+        sourceCompatibility = JavaVersion.VERSION_22
+        targetCompatibility = JavaVersion.VERSION_22
     }
 }
