@@ -22,8 +22,8 @@ the config, then creates symlinks to a desired folder.
 
 ## Usage
 
-- Download latest release and unzip it, ensure Java is installed on your system.
-- Run Keepup in the `bin` file or add it to your path.
+Download and run the [latest release](https://github.com/MineInAbyss/Keepup/releases/latest), we offer both a zip file
+that can run on any system with Java installed or a native executable for Linux that has far lower startup time.
 
 ```yaml
 Usage: keepup [OPTIONS] INPUT DOWNLOADPATH DEST
