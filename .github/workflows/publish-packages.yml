@@ -28,7 +28,7 @@ jobs:
 
       - name: Run gradle publish and build
         run: >
-          gradle publish shadowDistZip
+          ./gradlew publish shadowDistZip
           -PmineinabyssMavenUsername=${{ secrets.MAVEN_PUBLISH_USERNAME }} -PmineinabyssMavenPassword=${{ secrets.MAVEN_PUBLISH_PASSWORD }}
 
       - name: Run native compile

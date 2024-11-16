@@ -26,6 +26,6 @@ turtle = { module = "com.lordcodes.turtle:turtle", version.ref = "turtle" }
 graalvm-nativeimage = "org.graalvm.buildtools.native:0.10.3"
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = "com.github.johnrengelman.shadow:8.1.1"
+shadow = "com.gradleup.shadow:8.3.5"
 versionCatalogUpdate = "nl.littlerobots.version-catalog-update:0.8.5"
 versions = "com.github.ben-manes.versions:0.51.0"
