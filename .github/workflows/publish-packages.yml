@@ -39,4 +39,4 @@ jobs:
           run-gradle-build: false
           release-files: |
             keepup-cli/build/distributions/keepup*.zip
-            keepup-cli/build/native/nativeCompile/keepup*.zip
+            keepup-cli/build/native/nativeCompile/keepup
