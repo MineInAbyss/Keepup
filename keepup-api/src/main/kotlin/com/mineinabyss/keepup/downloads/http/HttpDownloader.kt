@@ -12,6 +12,7 @@ import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import java.nio.file.Path
 import kotlin.io.path.*
+import kotlin.time.Duration.Companion.seconds
 
 class HttpDownloader(
     val client: HttpClient,
@@ -22,9 +23,9 @@ class HttpDownloader(
     override suspend fun download(): List<DownloadResult> {
         val cacheFile = targetDir.resolve("$fileName.cache")
         val targetFile = targetDir.resolve(fileName)
-        val headers = client.head(source.query).headers
-        val lastModified = headers["Last-Modified"]?.fromHttpToGmtDate()
-        val length = headers["Content-Length"]?.toLongOrNull()
+        val headers = client.head(source.query)
+        val length = headers.contentLength()
+        val lastModified = headers.lastModified()
 
         val cache = "Last-Modified: $lastModified, Content-Length: $length"
         if (targetFile.exists() && cacheFile.exists() && cacheFile.readText() == cache)
@@ -32,7 +33,7 @@ class HttpDownloader(
 
         client.get(source.query) {
             timeout {
-                requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+                requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
         }
             .bodyAsChannel()

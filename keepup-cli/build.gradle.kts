@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.shadow)
+    alias(libs.plugins.graalvm.nativeimage)
     application
 }
 
@@ -37,6 +38,19 @@ tasks {
     shadowJar {
         minimize {
             exclude { it.moduleGroup == "org.slf4j" || it.moduleGroup == "com.github.ajalt.mordant" }
+        }
+    }
+}
+
+graalvmNative {
+    binaries {
+        named("main") {
+            fallback.set(false)
+            verbose.set(false)
+
+            buildArgs.addAll("--initialize-at-build-time", "-Os")
+            imageName.set("keepup")
+            runtimeArgs.add("-Xmx10m")
         }
     }
 }

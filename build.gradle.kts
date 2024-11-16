@@ -29,3 +29,10 @@ tasks.dependencyUpdates {
         isNonStable(candidate.version)
     }
 }
+
+subprojects {
+    apply(plugin = "kotlin")
+    kotlin {
+        jvmToolchain(22)
+    }
+}

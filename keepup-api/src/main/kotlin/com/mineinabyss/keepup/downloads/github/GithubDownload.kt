@@ -23,6 +23,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.div
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Ex url "github:MineInAbyss/Idofront:v0.20.6:*.jar"
@@ -63,7 +64,7 @@ class GithubDownload(
         ) {
             val response = client.get {
                 timeout {
-                    requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+                    requestTimeoutMillis = 30.seconds.inWholeMilliseconds
                 }
                 if (config.overrideGithubRelease == LATEST)
                     url("https://api.github.com/repos/${artifact.repo}/releases")

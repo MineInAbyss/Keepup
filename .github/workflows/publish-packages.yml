@@ -15,21 +15,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
+      - uses: graalvm/setup-graalvm@v1
         with:
-          distribution: temurin
-          java-version: 17
+          java-version: '23'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: gradle
 
-      - name: Run gradle build and publish
+      - name: Grant execute permission for gradlew
+        shell: bash
+        run: chmod +x gradlew
+
+      - name: Run gradle publish and build
         run: >
           gradle publish shadowDistZip
           -PmineinabyssMavenUsername=${{ secrets.MAVEN_PUBLISH_USERNAME }} -PmineinabyssMavenPassword=${{ secrets.MAVEN_PUBLISH_PASSWORD }}
+
+      - name: Run native compile
+        run: ./gradlew nativeCompile
 
       - uses: MineInAbyss/publish-action@develop
         with:
           run-gradle-build: false
           release-files: |
             keepup-cli/build/distributions/keepup*.zip
+            keepup-cli/build/native/nativeCompile/keepup*.zip

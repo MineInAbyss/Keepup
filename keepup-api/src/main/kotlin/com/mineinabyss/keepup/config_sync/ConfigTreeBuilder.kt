@@ -29,6 +29,7 @@ class ConfigTreeBuilder {
         onUntracked: (Path) -> Unit,
     ) {
         val deleteDir = (root / deleteUnder)
+        if (deleteDir.notExists()) return
         deleteDir.visitFileTree {
             onPreVisitDirectory { directory, attr ->
                 if ("${directory.relativeTo(deleteDir).pathString}/" in config.keep)

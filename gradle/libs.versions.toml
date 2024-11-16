@@ -1,12 +1,12 @@
 [versions]
 clikt = "5.0.1"
 hocon = "1.4.3"
-kaml = "0.61.0"
-kotlin = "2.0.20"
+kaml = "0.65.0"
+kotlin = "2.0.21"
 kotlinx-coroutines = "1.9.0"
 kotlinx-serialization = "1.7.3"
-ktor = "2.3.12"
-mordant = "3.0.0"
+ktor = "3.0.1"
+mordant = "3.0.1"
 slf4j = "2.0.16"
 turtle = "0.10.0"
 
@@ -23,8 +23,9 @@ slf4j = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
 turtle = { module = "com.lordcodes.turtle:turtle", version.ref = "turtle" }
 
 [plugins]
+graalvm-nativeimage = "org.graalvm.buildtools.native:0.10.3"
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = "com.github.johnrengelman.shadow:8.1.1"
-versionCatalogUpdate = "nl.littlerobots.version-catalog-update:0.8.4"
+versionCatalogUpdate = "nl.littlerobots.version-catalog-update:0.8.5"
 versions = "com.github.ben-manes.versions:0.51.0"
