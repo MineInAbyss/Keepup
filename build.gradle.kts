@@ -1,7 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.kotlinJvm)
-//    alias(libs.plugins.versions)
-//    alias(libs.plugins.versionCatalogUpdate)
 }
 
 allprojects {
@@ -10,34 +10,16 @@ allprojects {
     }
 }
 
-//versionCatalogUpdate {
-//    this.keep {
-//        keepUnusedPlugins = true
-//        keepUnusedVersions = true
-//        keepUnusedLibraries = true
-//    }
-//}
-
-//tasks.dependencyUpdates {
-//    fun isNonStable(version: String): Boolean {
-//        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
-//        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
-//        val isStable = stableKeyword || regex.matches(version)
-//        return isStable.not()
-//    }
-//    rejectVersionIf {
-//        isNonStable(candidate.version)
-//    }
-//}
-
 allprojects {
     apply(plugin = "kotlin")
 
+    // Don't want to set a toolchain because we will be compiling with GraalVM 23 during CI
     kotlin {
-        jvmToolchain(23) // want this for graalvm 23 despite kotlin not supporting yet
+        compilerOptions.jvmTarget = JvmTarget.JVM_17
     }
+
     java {
-        sourceCompatibility = JavaVersion.VERSION_22
-        targetCompatibility = JavaVersion.VERSION_22
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
