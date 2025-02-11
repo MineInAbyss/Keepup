@@ -37,10 +37,8 @@ class KeepupConfigSync(
         val reduced = ConfigDefinition.reduce(included)
 
         t.println("${MSG.info} Included paths: ${reduced.copyPaths}")
-        val paths = reduced.copyPaths.map { configsRoot / it }
-
         val tree = ConfigTreeBuilder()
-        val destToSource = tree.destFilesForRoots(paths)
+        val destToSource = tree.destFilesForRoots(configsRoot, reduced.copyPaths)
         val trackedFiles = destToSource.keys.map { it.pathString }.toSet()
         t.println("${MSG.info} Synchronizing ${trackedFiles.size} files...")
         templateCacheDir?.createParentDirectories()

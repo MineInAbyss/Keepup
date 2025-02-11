@@ -1,0 +1,9 @@
+feat/example:
+  copyPaths:
+    - source: plugins/example
+      dest: plugins/example
+    - feat/example
+
+example-host:
+  include:
+    - feat/example

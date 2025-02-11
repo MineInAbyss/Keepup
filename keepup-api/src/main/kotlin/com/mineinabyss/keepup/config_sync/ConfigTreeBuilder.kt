@@ -7,14 +7,17 @@ import kotlin.io.path.*
 @OptIn(ExperimentalPathApi::class)
 class ConfigTreeBuilder {
     fun destFilesForRoots(
-        roots: Collection<Path>
+        configsRoot: Path,
+        roots: Collection<CopyPath>
     ): Map<Path, Path> {
         val destToSource = mutableMapOf<Path, Path>()
-        roots.forEach { sourceRoot ->
+        roots.forEach { copyPath ->
+            val sourceRoot = configsRoot / copyPath.source
+            val destOffset = Path(copyPath.dest)
             sourceRoot.walk(PathWalkOption.INCLUDE_DIRECTORIES)
                 .filter { it.isRegularFile() }
                 .forEach { source ->
-                    val dest = source.relativeTo(sourceRoot)
+                    val dest = destOffset / source.relativeTo(sourceRoot)
                     destToSource[dest] = source
                 }
         }

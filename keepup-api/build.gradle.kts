@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(kotlin("test"))
     implementation(libs.kotlinx.serialization)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.hocon)
