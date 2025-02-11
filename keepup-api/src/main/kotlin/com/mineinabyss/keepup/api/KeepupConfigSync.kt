@@ -58,12 +58,12 @@ class KeepupConfigSync(
                         val isTemplate = templateCacheDir != null && source.name.endsWith(".peb")
                         val destAbsolute =
                             if (isTemplate)
-                                destRoot / (dest.parent ?: Path(".")) / dest.name.removeSuffix(".peb")
+                                destRoot / (dest.parent ?: Path("")) / dest.name.removeSuffix(".peb")
                             else destRoot / dest
 
                         val sourceForSkipComparison = if (isTemplate) {
-                            val cacheFile = templateCacheDir!! /
-                                    (dest.parent ?: Path(".")) /
+                            val cacheFile = templateCacheDir /
+                                    (dest.parent ?: Path("")) /
                                     "${hashString(reduced.variables.toString() + "len: ${source.fileSize()}").toHexString()}-${dest.name}"
 
                             // Create template cache if necessary

@@ -56,7 +56,7 @@ data class FileConfig(
 @KeepGeneratedSerializer
 data class CopyPath(
     /** Offset from target path to copy to (i.e. target / dest / *files in source*). */
-    val dest: String = ".",
+    val dest: String = "",
     val source: String,
 ) {
     object InlineSeriailzer : KSerializer<CopyPath> {
@@ -71,6 +71,8 @@ data class CopyPath(
             else generatedSerializer()
         }
     }
+
+    override fun toString() = "$source -> $dest"
 }
 
 @Serializable
