@@ -3,9 +3,13 @@ feat/example:
     - source: should-correctly-set-dest
       dest: plugins/example
     - should-correctly-default-dest
+    - should-template-inventory-with-env
     - source: should-copy-individual-files/copy-individual
       dest: plugins/example
 
 example-host:
+  variables:
+    testVar: "{{ TEST_VAR }}"
+
   include:
     - feat/example

@@ -14,7 +14,7 @@ dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.mordant)
-    implementation("io.pebbletemplates:pebble:3.2.2")
+    implementation("io.pebbletemplates:pebble:3.2.3")
 }
 
 java {

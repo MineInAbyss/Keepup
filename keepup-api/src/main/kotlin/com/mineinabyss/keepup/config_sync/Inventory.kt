@@ -1,7 +1,13 @@
 package com.mineinabyss.keepup.config_sync
 
-import com.charleskorn.kaml.*
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlContentPolymorphicSerializer
+import com.charleskorn.kaml.YamlNode
+import com.charleskorn.kaml.YamlScalar
+import com.mineinabyss.keepup.config_sync.templating.Templater
 import com.mineinabyss.keepup.helpers.InnerSerializer
+import com.mineinabyss.keepup.helpers.MSG
+import com.mineinabyss.keepup.t
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -41,7 +47,21 @@ class Inventory(
     )
 
     companion object {
-        fun from(inputStream: InputStream) = Yaml.default.decodeFromStream<Inventory>(inputStream)
+        fun from(
+            templater: Templater,
+            inputStream: InputStream,
+            environment: Map<String, String> = System.getenv().toMap(),
+        ): Inventory {
+            t.println("${MSG.info} Parsing inventory file")
+            val templatedText = templater.template(
+                inputStream.bufferedReader().readText(),
+                environment
+            ).getOrElse {
+                t.println("${MSG.error} Failed to template inventory file!")
+                throw it
+            }
+            return Yaml.default.decodeFromString<Inventory>(templatedText)
+        }
     }
 }
 

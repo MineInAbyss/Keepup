@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import com.mineinabyss.keepup.api.Keepup
 import com.mineinabyss.keepup.config_sync.Inventory
+import com.mineinabyss.keepup.config_sync.templating.Templater
 import com.mineinabyss.keepup.helpers.MSG
 import com.mineinabyss.keepup.t
 import kotlin.io.path.inputStream
@@ -49,8 +50,9 @@ class ConfigCommand : CliktCommand(name = "config") {
     override fun run() {
         t.println("${MSG.info} Running config sync for $include...")
         val keepup = Keepup()
+        val templater = Templater()
         keepup.configSync(
-            inventory = Inventory.from(inventoryFile.inputStream())
+            inventory = Inventory.from(templater, inventoryFile.inputStream())
         ).sync(
             host = include,
             configsRoot = sourceRoot,
