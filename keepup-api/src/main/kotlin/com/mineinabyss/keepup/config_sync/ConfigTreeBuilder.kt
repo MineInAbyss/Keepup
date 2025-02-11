@@ -1,5 +1,7 @@
 package com.mineinabyss.keepup.config_sync
 
+import com.mineinabyss.keepup.helpers.MSG
+import com.mineinabyss.keepup.t
 import java.nio.file.FileVisitResult
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -14,12 +16,20 @@ class ConfigTreeBuilder {
         roots.forEach { copyPath ->
             val sourceRoot = configsRoot / copyPath.source
             val destOffset = Path(copyPath.dest)
-            sourceRoot.walk(PathWalkOption.INCLUDE_DIRECTORIES)
-                .filter { it.isRegularFile() }
-                .forEach { source ->
-                    val dest = destOffset / source.relativeTo(sourceRoot)
-                    destToSource[dest] = source
+            when {
+                sourceRoot.isRegularFile() -> {
+                    val dest = destOffset / sourceRoot.fileName
+                    destToSource[dest] = sourceRoot
+                    return@forEach
                 }
+                sourceRoot.isDirectory() -> sourceRoot.walk(PathWalkOption.INCLUDE_DIRECTORIES)
+                    .filter { it.isRegularFile() }
+                    .forEach { source ->
+                        val dest = destOffset / source.relativeTo(sourceRoot)
+                        destToSource[dest] = source
+                    }
+                else -> t.println("${MSG.warn} Included path $sourceRoot does not exist.")
+            }
         }
         return destToSource
     }

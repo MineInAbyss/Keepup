@@ -1,8 +1,10 @@
 feat/example:
   copyPaths:
-    - source: plugins/example
+    - source: should-correctly-set-dest
       dest: plugins/example
-    - feat/example
+    - should-correctly-default-dest
+    - source: should-copy-individual-files/copy-individual
+      dest: plugins/example
 
 example-host:
   include:
