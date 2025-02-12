@@ -19,29 +19,43 @@ class HttpDownloader(
     val source: DownloadSource,
     val targetDir: Path,
     val fileName: String = source.query.substringAfterLast("/"),
+    val overrideWhenHeadersChange: Boolean = false,
 ) : Downloader {
-    override suspend fun download(): List<DownloadResult> {
-        val cacheFile = targetDir.resolve("$fileName.cache")
-        val targetFile = targetDir.resolve(fileName)
+    suspend fun getCacheString(query: String): String {
         val headers = client.head(source.query)
         val length = headers.contentLength()
         val lastModified = headers.lastModified()
+        return "Last-Modified: $lastModified, Content-Length: $length"
+    }
 
-        val cache = "Last-Modified: $lastModified, Content-Length: $length"
-        if (targetFile.exists() && cacheFile.exists() && cacheFile.readText() == cache)
+    override suspend fun download(): List<DownloadResult> {
+        val cacheFile = targetDir.resolve("$fileName.cache")
+        val targetFile = targetDir.resolve(fileName)
+        val partial = targetDir.resolve("$fileName.partial")
+        val cacheString = if (overrideWhenHeadersChange) getCacheString(source.query) else null
+
+        // Check if target already exists and skip if it does, check last modified headers if overrideWhenHeadersChange is true
+        if (targetFile.exists() && (cacheString == null || (cacheFile.exists() && cacheFile.readText() == cacheString)))
             return listOf(DownloadResult.SkippedBecauseCached(targetFile, source.keyInConfig))
 
-        client.get(source.query) {
+        // Write to partial file, then move it to target once download is complete
+        partial.deleteIfExists()
+        client.prepareGet {
+            url(source.query)
             timeout {
                 requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
+        }.execute {
+            it.bodyAsChannel()
+                .copyAndClose(partial.toFile().writeChannel())
         }
-            .bodyAsChannel()
-            .copyAndClose(targetFile.toFile().writeChannel())
+
+        targetFile.deleteIfExists()
+        partial.moveTo(targetFile)
 
         // Only mark as cached after download is complete
         cacheFile.deleteIfExists()
-        cacheFile.createFile().writeText(cache)
+        cacheFile.createFile().writeText(cacheString ?: getCacheString(source.query))
 
         return listOf(DownloadResult.Downloaded(targetFile, source.keyInConfig))
     }

@@ -7,12 +7,11 @@ import com.mineinabyss.keepup.downloads.parsing.DownloadSource
 import com.mineinabyss.keepup.similarfiles.SimilarFileChecker
 import com.mineinabyss.keepup.type_checker.FileTypeChecker.SYSTEM_SUPPORTS_FILE
 import io.ktor.client.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
@@ -22,13 +21,17 @@ class KeepupDownloader(
     val http: HttpClient,
     val config: KeepupDownloaderConfig,
     val githubConfig: GithubConfig,
+    val downloadDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    val maxConcurrentDownloads: Int = 4,
 ) {
+    private val concurrentDownloads = Semaphore(maxConcurrentDownloads)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun download(
         vararg sources: DownloadSource,
         dest: Path,
         scope: CoroutineScope,
-    ): ReceiveChannel<DownloadResult> = scope.produce(Dispatchers.IO) {
+    ): ReceiveChannel<DownloadResult> = scope.produce {
         SYSTEM_SUPPORTS_FILE // check if system supports file command
         val similarFileChecker = if (config.ignoreSimilar) SimilarFileChecker(dest) else null
         val downloader = DownloadParser(
@@ -37,16 +40,16 @@ class KeepupDownloader(
             githubConfig = githubConfig,
             similarFileChecker = similarFileChecker,
         )
-
         sources.map { source ->
-            val downloadPathForKey = (config.downloadCache / source.keyInConfig).absolute()
-            downloadPathForKey.createDirectories()
-            launch {
-                downloader
-                    .download(source, downloadPathForKey)
-                    .forEach { channel.send(it) }
+            launch(downloadDispatcher) {
+                concurrentDownloads.withPermit {
+                    val downloadPathForKey = (config.downloadCache / source.keyInConfig).absolute()
+                    downloadPathForKey.createDirectories()
+                    downloader.download(source, downloadPathForKey)
+                        .forEach { channel.send(it) }
+                }
             }
-        }
+        }.joinAll()
     }
 }
 
