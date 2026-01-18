@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlinJvm)
+    kotlin("jvm")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.shadow)
     alias(libs.plugins.graalvm.nativeimage)

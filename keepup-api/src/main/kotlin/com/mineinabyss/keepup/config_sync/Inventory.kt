@@ -4,6 +4,7 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlContentPolymorphicSerializer
 import com.charleskorn.kaml.YamlNode
 import com.charleskorn.kaml.YamlScalar
+import com.mineinabyss.jsonschema.annotations.Description
 import com.mineinabyss.keepup.config_sync.templating.Templater
 import com.mineinabyss.keepup.helpers.InnerSerializer
 import com.mineinabyss.keepup.helpers.MSG
@@ -67,7 +68,12 @@ class Inventory(
 
 @Serializable
 data class FileConfig(
+    @Description(
+        "Whether to delete files that are no longer specified in any Keepup sources. " +
+                "Keepup will look at all files copied over and delete anything in this directory that wasn't part of this list."
+    )
     val deleteUntracked: Boolean = false,
+    @Description("Specifies specific files or directories to NOT delete, ex. (`test.yml` will keep a single file, `someDirectory/` will keep an entire directory.)")
     val keep: List<String> = emptyList(),
 )
 
@@ -97,10 +103,14 @@ data class CopyPath(
 
 @Serializable
 data class ConfigDefinition(
+    @Description("List of paths to copy, each specifies a source and destination. If only a string is specified, assumes source and dest are the same (up to relative paths.)")
     val copyPaths: List<CopyPath> = emptyList(),
+    @Description("Options for destination paths, ex. deleting untracked files.")
     val files: Map<String, FileConfig> = mapOf(),
+    @Description("List of other configs to include in this config, properties will be merged with this config taking precedence.")
     val include: List<String> = listOf(),
     @Serializable(with = VariablesSerializer::class)
+    @Description("Variables to be passed into pebble templates. (ex. someValue: 100).")
     val variables: Map<String, @Contextual Any?> = mapOf(),
 ) {
     companion object {

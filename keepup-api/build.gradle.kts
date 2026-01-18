@@ -1,10 +1,21 @@
 plugins {
-    alias(libs.plugins.kotlinJvm)
+    kotlin("jvm")
     alias(libs.plugins.kotlinx.serialization)
     alias(idofrontLibs.plugins.mia.publication)
 }
 
+kotlin {
+    jvmToolchain(21)
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
+}
+
 dependencies {
+    implementation("com.mineinabyss.jsonschema-kt:annotations:0.1.1")
+    implementation("com.mineinabyss.jsonschema-kt:dsl:0.1.1")
+    implementation("com.mineinabyss.jsonschema-kt:generator-kotlinx-serialization:0.1.1")
+
     implementation(kotlin("test"))
     implementation(libs.kotlinx.serialization)
     implementation(libs.kotlinx.coroutines)
